@@ -12,22 +12,178 @@
 			getTickerData()
 				.then(function(tickerData) {
 					config.tickerData = tickerData;
-//					runHandler();
+					var lastDays = 5;
+					while(lastDays <= 250) {
+						runHandler(lastDays);
+						lastDays++;
+					}
 				})
-				.catch(function() {
+				.catch(function(e) {
+					console.log(e.stack);
 					alert("실행에 실패하였습니다.");
 				})
 			
-//			function runHandler() {
-//				getMomentum();
-//			}
-//			
-//			function getMomentum() {
-//				var tickerData = config.tickerData;
+			function runHandler(lastDays) {
+				initMomentum(lastDays);
+				run();
+				view(lastDays, "resultList");
+//				view(lastDays, "oneYearAgoResultList");
+//				view(lastDays, "threeYearAgoResultList");
+//				view(lastDays, "fiveYearAgoResultList");
+			}
+			
+			function view(lastDays, resultName) {
+				var resultList = config[resultName];
+				
+				var cnt = 0;
+				var successCnt = 0;
+				resultList.forEach(function(row) {
+//					console.log(JSON.stringify(row));
+					cnt++;
+					if (row.successFlag === true) successCnt++;
+				})
+				console.log(resultName + " / " + lastDays + " / " + round4(successCnt / cnt));
+			}
+			
+			function run() {
+				var tqqqDataList = config.tickerData.tqqq;
+				var sqqqDataList = config.tickerData.sqqq;
+				var momentumData = config.momentumData;
+				var buyTickerData = {};
+				var resultList = [];
+				var oneYearAgoResultList = [];
+				var threeYearAgoResultList = [];
+				var fiveYearAgoResultList = [];
+				var lastDate = tqqqDataList[tqqqDataList.length - 1].date;
+				var oneYearAgoDate = moment(lastDate, "YYYYMMDD").subtract(1, 'year').format("YYYYMMDD");
+				var threeYearAgoDate = moment(lastDate, "YYYYMMDD").subtract(3, 'year').format("YYYYMMDD");
+				var fiveYearAgoDate = moment(lastDate, "YYYYMMDD").subtract(5, 'year').format("YYYYMMDD");
+				
+				tqqqDataList.forEach(function(tqqqRow, idx) {
+					var date = tqqqRow.date;
+					var successFlag = false;
+					
+					if (buyTickerData.buyFlag === true) {
+						var sqqqRow = sqqqDataList[idx];
+						
+						if (buyTickerData.ticker === "tqqq") {
+							if (tqqqRow.change > 0) {
+								successFlag = true;
+							}
+						} else if (buyTickerData.ticker === "sqqq") {
+							if (sqqqRow.change > 0) {
+								successFlag = true;
+							}
+						}
+						
+						var result = {
+							buyTicker: buyTickerData.ticker,
+							row: {
+								tqqq: tqqqRow,
+								sqqq: sqqqRow
+							},
+							successFlag: successFlag
+						}
+						
+						resultList.push(result)
+						
+						if (date >= oneYearAgoDate) {
+							oneYearAgoResultList.push(result);
+						}
+						
+						if (date >= threeYearAgoDate) {
+							threeYearAgoResultList.push(result);
+						}
+						
+						if (date >= fiveYearAgoDate) {
+							fiveYearAgoResultList.push(result);
+						}
+						
+						buyTickerData = {};
+					}
+					
+					if (momentumData.hasOwnProperty(date) === false || isEmptyStr(momentumData[date]) === true) return;
+					 
+					buyTickerData = {
+						buyFlag: true,
+						ticker: momentumData[date]
+					}
+				})
+				
+				config.resultList = resultList;
+				config.oneYearAgoResultList = oneYearAgoResultList;
+				config.threeYearAgoResultList = threeYearAgoResultList;
+				config.fiveYearAgoResultList = fiveYearAgoResultList;
+			}
+			
+//			function initMomentum(lastDays) {
+//				var tqqqDataList = config.tickerData.tqqq;
+//				var lastChangeList = [];
+////				var lastDays = lastDays;
+//				var momentumData = {};
 //				
-//				Object.keys(resultData)
-//				tickerData
+//				tqqqDataList.forEach(function(tqqqRow) {
+//					lastChangeList.push(tqqqRow.change);
+//					if (lastChangeList.length <= lastDays) return;
+//					lastChangeList.shift();
+//					
+//					var weight = 1;
+//					var sumMomentum = 0;
+//					lastChangeList.forEach(function(change) {
+//						if (change > 0) {
+//							sumMomentum += 1 * weight;
+//						} else if (change < 0) {
+//							sumMomentum -= 1 * weight;
+//						}
+//					})
+//					
+//					var buyTicker = "";
+//					if (sumMomentum > 0) {
+//						buyTicker = "tqqq";
+//					} else if (sumMomentum < 0) {
+//						buyTicker = "sqqq";
+//					}
+//					
+//					momentumData[tqqqRow.date] = buyTicker;
+//				})
+//				
+//				config.momentumData = momentumData;
 //			}
+			
+			function initMomentum(lastDays) {
+				var tqqqDataList = config.tickerData.tqqq;
+				var lastChangeList = [];
+//				var lastDays = 20;
+				var momentumData = {};
+				
+				tqqqDataList.forEach(function(tqqqRow) {
+					lastChangeList.push(tqqqRow.change);
+					if (lastChangeList.length <= lastDays) return;
+					lastChangeList.shift();
+					
+					var weight = lastDays;
+					var sumMomentum = 0;
+					lastChangeList.forEach(function(change) {
+						if (change > 0) {
+							sumMomentum += 1 * weight;
+						} else if (change < 0) {
+							sumMomentum -= 1 * weight;
+						}
+						weight--;
+					})
+					
+					var buyTicker = "";
+					if (sumMomentum > 0) {
+						buyTicker = "tqqq";
+					} else if (sumMomentum < 0) {
+						buyTicker = "sqqq";
+					}
+					
+					momentumData[tqqqRow.date] = buyTicker;
+				})
+				
+				config.momentumData = momentumData;
+			}
 					
 			function getTickerData() {
 				return new Promise(function(resolve, reject) {

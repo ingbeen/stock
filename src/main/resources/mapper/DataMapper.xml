@@ -29,7 +29,7 @@
     </insert>
 
     <select id="select" parameterType="String" resultType="Map">
-		select *
+		select ticker, close_date as 'date', close_price as 'price', close_change as 'change'
 		from history
 		where ticker = #{value}
 		order by close_date
