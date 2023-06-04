@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.stock.mapper.DataMapper">
+
+    <select id="getLastDate" parameterType="String" resultType="String">
+        select max(close_date)
+		from history
+		where ticker = #{value}
+		group by ticker
+    </select>
+
+    <insert id="insert" parameterType="List">
+		insert into history 
+		(
+			ticker
+			, close_date
+			, close_price
+			, close_change
+		) 
+		values 
+		<foreach collection="list" item="item" separator=",">
+		(
+			#{item.ticker}
+			, #{item.close_date}
+			, #{item.close_price}
+			, #{item.close_change}
+		)
+		</foreach>
+    </insert>
+
+    <select id="select" parameterType="String" resultType="Map">
+		select *
+		from history
+		where ticker = #{value}
+		order by close_date
+    </select>
+    
+</mapper>
