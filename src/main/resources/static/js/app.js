@@ -1,21 +1,47 @@
 (function() {
 	bind();
-	$("#upload").trigger("click");
+//	$("#upload").trigger("click");
+	$("#run").trigger("click");
 	
 	function bind() {
 		
 		$("#run").on("click", function() {
 			var config = {
-				tickerList: ["tqqq", "sqqq"]
+				longTicker: "tqqq",
+				shortTicker: "sqqq",
+				startLength: 5,
+				endLength: 250,
+				dateInfo: {},
+				momentumDataByLength: {},
+				averageData: {},
+				momentumResultDataByLength: {}
 			}
 			
 			getTickerData()
 				.then(function(tickerData) {
 					config.tickerData = tickerData;
-					var lastDays = 5;
-					while(lastDays <= 250) {
-						runHandler(lastDays);
-						lastDays++;
+					var longDataList = tickerData[config.longTicker];
+					var shortDataList = tickerData[config.shortTicker];
+					var tempLongDataList = [];
+					var tempShortDataList = [];
+					
+					var fiveYearlaterDate = moment(longDataList[0].date, "YYYYMMDD").add(5, 'year').format("YYYYMMDD");
+					var idx = 0;
+					while(idx < longDataList.length) {
+						tempLongDataList.push(longDataList[idx]);
+						tempShortDataList.push(shortDataList[idx]);
+						
+						if (longDataList[idx].date < fiveYearlaterDate) {
+							idx++;
+							continue;
+						}
+						
+						config.longDataList = tempLongDataList;
+						config.shortDataList = tempShortDataList;
+						runHandler();
+						console.log(idx);
+						if (idx > 2000) debugger;
+						idx++;
 					}
 				})
 				.catch(function(e) {
@@ -23,80 +49,77 @@
 					alert("실행에 실패하였습니다.");
 				})
 			
-			function runHandler(lastDays) {
-				initMomentum(lastDays);
-				run();
-				view(lastDays, "resultList");
-//				view(lastDays, "oneYearAgoResultList");
-//				view(lastDays, "threeYearAgoResultList");
-//				view(lastDays, "fiveYearAgoResultList");
+			function runHandler() {
+				calculate();
+				initBestPosition();
 			}
 			
-			function view(lastDays, resultName) {
-				var resultList = config[resultName];
+			function initBestPosition() {
+				initBestMomentm();
+				debugger
+				while(maxLength <= config.endLength) {
+					var momentumResultData = config.momentumResultDataByLength[maxLength];
+					
+					maxLength++;
+				}
+				config.momentumResultDataByLength
+			}
+			
+			function calculate() {
+				initDate();
 				
-				var cnt = 0;
-				var successCnt = 0;
-				resultList.forEach(function(row) {
-//					console.log(JSON.stringify(row));
-					cnt++;
-					if (row.successFlag === true) successCnt++;
-				})
-				console.log(resultName + " / " + lastDays + " / " + round4(successCnt / cnt));
+				var maxLength = config.startLength
+				while(maxLength <= config.endLength) {
+					initMomentumDataByLength(maxLength);
+					maxLength++;
+				}
+				
+				maxLength = config.startLength
+				while(maxLength <= config.endLength) {
+					initMomentumResultDataByLength(maxLength);
+					maxLength++;
+				}
+				
+				initAverageChange();
 			}
 			
-			function run() {
-				var tqqqDataList = config.tickerData.tqqq;
-				var sqqqDataList = config.tickerData.sqqq;
-				var momentumData = config.momentumData;
+			function initMomentumResultDataByLength(maxLength) {
+				var longDataList = config.longDataList;
+				var shortDataList = config.shortDataList;
+				var longTicker = config.longTicker;
+				var shortTicker = config.shortTicker;
+				var momentumData = config.momentumDataByLength[maxLength];
 				var buyTickerData = {};
-				var resultList = [];
 				var oneYearAgoResultList = [];
-				var threeYearAgoResultList = [];
-				var fiveYearAgoResultList = [];
-				var lastDate = tqqqDataList[tqqqDataList.length - 1].date;
-				var oneYearAgoDate = moment(lastDate, "YYYYMMDD").subtract(1, 'year').format("YYYYMMDD");
-				var threeYearAgoDate = moment(lastDate, "YYYYMMDD").subtract(3, 'year').format("YYYYMMDD");
-				var fiveYearAgoDate = moment(lastDate, "YYYYMMDD").subtract(5, 'year').format("YYYYMMDD");
+				var oneYearAgoDate = config.dateInfo.oneYearAgoDate;
 				
-				tqqqDataList.forEach(function(tqqqRow, idx) {
-					var date = tqqqRow.date;
+				longDataList.forEach(function(longRow, idx) {
+					var date = longRow.date;
 					var successFlag = false;
 					
 					if (buyTickerData.buyFlag === true) {
-						var sqqqRow = sqqqDataList[idx];
+						var shortRow = shortDataList[idx];
 						
-						if (buyTickerData.ticker === "tqqq") {
-							if (tqqqRow.change > 0) {
+						if (buyTickerData.ticker === longTicker) {
+							if (longRow.change > 0) {
 								successFlag = true;
 							}
-						} else if (buyTickerData.ticker === "sqqq") {
-							if (sqqqRow.change > 0) {
+						} else if (buyTickerData.ticker === shortTicker) {
+							if (shortRow.change > 0) {
 								successFlag = true;
 							}
 						}
 						
 						var result = {
 							buyTicker: buyTickerData.ticker,
-							row: {
-								tqqq: tqqqRow,
-								sqqq: sqqqRow
-							},
-							successFlag: successFlag
+							successFlag: successFlag,
+							row: {}
 						}
-						
-						resultList.push(result)
+						result.row[longTicker] = longRow;
+						result.row[shortTicker] = shortRow;
 						
 						if (date >= oneYearAgoDate) {
 							oneYearAgoResultList.push(result);
-						}
-						
-						if (date >= threeYearAgoDate) {
-							threeYearAgoResultList.push(result);
-						}
-						
-						if (date >= fiveYearAgoDate) {
-							fiveYearAgoResultList.push(result);
 						}
 						
 						buyTickerData = {};
@@ -109,24 +132,106 @@
 						ticker: momentumData[date]
 					}
 				})
-				
-				config.resultList = resultList;
-				config.oneYearAgoResultList = oneYearAgoResultList;
-				config.threeYearAgoResultList = threeYearAgoResultList;
-				config.fiveYearAgoResultList = fiveYearAgoResultList;
+				var momentumResultDataByLength = config.momentumResultDataByLength;
+				momentumResultDataByLength[maxLength] = {};
+				momentumResultDataByLength[maxLength].oneYearAgoResultList = oneYearAgoResultList;
 			}
 			
-			function initMomentum(lastDays) {
-				var tqqqDataList = config.tickerData.tqqq;
+			function initAverageChange() {
+				var oneYearAgoDate = config.dateInfo.oneYearAgoDate;
+				var threeYearAgoDate = config.dateInfo.threeYearAgoDate;
+				var fiveYearAgoDate = config.dateInfo.fiveYearAgoDate;
+				var longDataList = config.longDataList;
+				var dataListMaxlength = longDataList.length;
+				var idx = 0;
+
+				var averageData = {};
+				averageData.all = {};
+				averageData.oneYearAgo = {};
+				averageData.threeYearAgo = {};
+				averageData.fiveYearAgo = {};
+
+				var allPlusList = [];
+				var oneYearAgoPlusList = [];
+				var threeYearAgoPlusList = [];
+				var fiveYearAgoPlusList = [];
+				var allMinusList = [];
+				var oneYearAgoMinusList = [];
+				var threeYearAgoMinusList = [];
+				var fiveYearAgoMinusList = [];
+				
+				while(idx < dataListMaxlength) {
+					var date = longDataList[idx].date;
+					var change = longDataList[idx].change;
+					
+					if (change > 0) {
+						allPlusList.push(change);
+						
+						if (date >= oneYearAgoDate) {
+							oneYearAgoPlusList.push(change);
+						}
+						
+						if (date >= threeYearAgoDate) {
+							threeYearAgoPlusList.push(change);
+						}
+						
+						if (date >= fiveYearAgoDate) {
+							fiveYearAgoPlusList.push(change);
+						}
+					} else if (change < 0) {
+						allMinusList.push(change);
+						
+						if (date >= oneYearAgoDate) {
+							oneYearAgoMinusList.push(change);
+						}
+						
+						if (date >= threeYearAgoDate) {
+							threeYearAgoMinusList.push(change);
+						}
+						
+						if (date >= fiveYearAgoDate) {
+							fiveYearAgoMinusList.push(change);
+						}
+					}
+					
+					idx++;
+				}
+				
+				averageData.all.plus = d3.mean(allPlusList);
+				averageData.oneYearAgo.plus = d3.mean(oneYearAgoPlusList)
+				averageData.threeYearAgo.plus = d3.mean(threeYearAgoPlusList)
+				averageData.fiveYearAgo.plus = d3.mean(fiveYearAgoPlusList)
+				averageData.all.minus = d3.mean(allMinusList)
+				averageData.oneYearAgo.minus = d3.mean(oneYearAgoMinusList)
+				averageData.threeYearAgo.minus = d3.mean(threeYearAgoMinusList)
+				averageData.fiveYearAgo.minus = d3.mean(fiveYearAgoMinusList)
+				
+				config.averageData = averageData;
+			} 
+			
+			function initDate() {
+				var lastDate = config.longDataList[config.longDataList.length - 1].date;
+				var oneYearAgoDate = moment(lastDate, "YYYYMMDD").subtract(1, 'year').format("YYYYMMDD");
+				var threeYearAgoDate = moment(lastDate, "YYYYMMDD").subtract(3, 'year').format("YYYYMMDD");
+				var fiveYearAgoDate = moment(lastDate, "YYYYMMDD").subtract(5, 'year').format("YYYYMMDD");
+				
+				config.dateInfo.lastDate = lastDate;
+				config.dateInfo.oneYearAgoDate = oneYearAgoDate;
+				config.dateInfo.threeYearAgoDate = threeYearAgoDate;
+				config.dateInfo.fiveYearAgoDate = fiveYearAgoDate;
+			}
+			
+			function initMomentumData(maxLength) {
 				var lastChangeList = [];
 				var momentumData = {};
+				var longDataList = config.longDataList;
 				
-				tqqqDataList.forEach(function(tqqqRow) {
-					lastChangeList.push(tqqqRow.change);
-					if (lastChangeList.length <= lastDays) return;
+				longDataList.forEach(function(row) {
+					lastChangeList.push(row.change);
+					if (lastChangeList.length <= maxLength) return;
 					lastChangeList.shift();
 					
-					var weight = lastDays;
+					var weight = maxLength;
 					var sumMomentum = 0;
 					lastChangeList.forEach(function(change) {
 						if (change > 0) {
@@ -139,15 +244,15 @@
 					
 					var buyTicker = "";
 					if (sumMomentum > 0) {
-						buyTicker = "tqqq";
+						buyTicker = config.longTicker;
 					} else if (sumMomentum < 0) {
-						buyTicker = "sqqq";
+						buyTicker = config.shortTicker;
 					}
 					
-					momentumData[tqqqRow.date] = buyTicker;
+					momentumData[row.date] = buyTicker;
 				})
 				
-				config.momentumData = momentumData;
+				config.momentumDataByLength[maxLength] = momentumData;
 			}
 					
 			function getTickerData() {
@@ -155,7 +260,9 @@
 					$.ajax({
 						type: "post",
 						url: "/data/select",
-						data: JSON.stringify({tickerList: JSON.stringify(config.tickerList)}),
+						data: JSON.stringify({
+							tickerList: JSON.stringify([config.longTicker, config.shortTicker])
+						}),
 						contentType: 'application/json; charset=utf-8',
 						dataType : "json"
 					})
@@ -253,7 +360,6 @@
 				
 				addChange(resultData, tickerList);
 				resultData = deleteZeroDay(resultData, tickerList);
-				debugger
 				var param = getParam(resultData);
 				insertResultData(param);
 			})
