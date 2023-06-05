@@ -3,7 +3,7 @@
 <mapper namespace="com.stock.mapper.DataMapper">
 
     <select id="getLastDate" parameterType="String" resultType="String">
-        select max(close_date)
+        select max(h_date)
 		from history
 		where ticker = #{value}
 		group by ticker
@@ -13,26 +13,38 @@
 		insert into history 
 		(
 			ticker
-			, close_date
+			, h_date
+			, open_price
+			, high_price
+			, low_price
 			, close_price
-			, close_change
+			, h_change
 		) 
 		values 
 		<foreach collection="list" item="item" separator=",">
 		(
 			#{item.ticker}
-			, #{item.close_date}
-			, #{item.close_price}
-			, #{item.close_change}
+			, #{item.date}
+			, #{item.openPrice}
+			, #{item.highPrice}
+			, #{item.lowPrice}
+			, #{item.closePrice}
+			, #{item.change}
 		)
 		</foreach>
     </insert>
 
     <select id="select" parameterType="String" resultType="Map">
-		select ticker, close_date as 'date', close_price as 'price', close_change as 'change'
+		select ticker
+			, h_date as 'date'
+			, open_price as 'openPrice'
+			, high_price as 'highPrice'
+			, low_price as 'lowPrice'
+			, close_price as 'closePrice'
+			, h_change as 'change'
 		from history
 		where ticker = #{value}
-		order by close_date
+		order by h_date
     </select>
     
 </mapper>

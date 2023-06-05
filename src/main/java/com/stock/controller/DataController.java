@@ -38,7 +38,7 @@ public class DataController {
 				List<Map<String, Object>> tempTickerDataList = new ArrayList<>();
 				int limit = 1000;
 				for (Map<String, Object> tickerData : tickerDataList) {
-					int closeDate = Integer.parseInt((String) tickerData.get("close_date"));
+					int closeDate = Integer.parseInt((String) tickerData.get("date"));
 					if (closeDate <= lastDate) continue;
 					
 					tickerData.put("ticker", ticker);

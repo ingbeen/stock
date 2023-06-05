@@ -1,6 +1,6 @@
 (function() {
 	bind();
-	$("#run").trigger("click");
+	$("#upload").trigger("click");
 	
 	function bind() {
 		
@@ -116,44 +116,9 @@
 				config.fiveYearAgoResultList = fiveYearAgoResultList;
 			}
 			
-//			function initMomentum(lastDays) {
-//				var tqqqDataList = config.tickerData.tqqq;
-//				var lastChangeList = [];
-////				var lastDays = lastDays;
-//				var momentumData = {};
-//				
-//				tqqqDataList.forEach(function(tqqqRow) {
-//					lastChangeList.push(tqqqRow.change);
-//					if (lastChangeList.length <= lastDays) return;
-//					lastChangeList.shift();
-//					
-//					var weight = 1;
-//					var sumMomentum = 0;
-//					lastChangeList.forEach(function(change) {
-//						if (change > 0) {
-//							sumMomentum += 1 * weight;
-//						} else if (change < 0) {
-//							sumMomentum -= 1 * weight;
-//						}
-//					})
-//					
-//					var buyTicker = "";
-//					if (sumMomentum > 0) {
-//						buyTicker = "tqqq";
-//					} else if (sumMomentum < 0) {
-//						buyTicker = "sqqq";
-//					}
-//					
-//					momentumData[tqqqRow.date] = buyTicker;
-//				})
-//				
-//				config.momentumData = momentumData;
-//			}
-			
 			function initMomentum(lastDays) {
 				var tqqqDataList = config.tickerData.tqqq;
 				var lastChangeList = [];
-//				var lastDays = 20;
 				var momentumData = {};
 				
 				tqqqDataList.forEach(function(tqqqRow) {
@@ -209,7 +174,7 @@
 		})
 		
 		
-		$("#fileUpload").on("click", function() {
+		$("#upload").on("click", function() {
 			d3.csv("csv/stock - price.csv").then(function(rows) {
 				if (Array.isArray(rows) === false || rows.length === 0) throw new Error("csv 파일 데이터 비정상");
 				
@@ -222,7 +187,7 @@
 					var colCnt = 0;
 					var tickerCnt = 0;
 					
-					if (rowCnt === 0) {
+					if (rowCnt === 1) {
 						while(row.hasOwnProperty(colCnt.toString())) {
 							var ticker = row[colCnt.toString()]; 
 							colCnt++;
@@ -230,7 +195,7 @@
 							tickerList.push(ticker);
 						}
 						
-						if (tickerList.length === 0 || tickerList.length !== colCnt / 2) throw new Error("csv 파일 데이터 비정상");
+						if (tickerList.length === 0 || tickerList.length !== colCnt / 6) throw new Error("csv 파일 데이터 비정상");
 						
 						maxColCnt = colCnt - 1;
 						rowCnt++;
@@ -243,52 +208,102 @@
 					}
 					
 					while(colCnt <= maxColCnt) {
+						var ticker = tickerList[tickerCnt];
 						var dateColStr = colCnt.toString();
-						var closeColStr = (colCnt + 1).toString();
+						var openPriceColStr = (colCnt + 1).toString();
+						var highPriceColStr = (colCnt + 2).toString();
+						var lowPriceColStr = (colCnt + 3).toString();
+						var closePriceColStr = (colCnt + 4).toString();
 						var date = "";
-						var close = 0;
+						var openPrice = 0;
+						var highPrice = 0;
+						var lowPrice = 0;
+						var closePrice = 0;
 						
 						date = row[dateColStr];
-						close = round2(row[closeColStr]);
+						openPrice = round2(row[openPriceColStr]);
+						highPrice = round2(row[highPriceColStr]);
+						lowPrice = round2(row[lowPriceColStr]);
+						closePrice = round2(row[closePriceColStr]);
 						
-						if (Number.isNaN(close) === true || close === 0) throw new Error("비정상 데이터 / row : " + JSON.stringify(row));
+						if (Number.isNaN(openPrice) === true || openPrice === 0) throw new Error("비정상 데이터 / row : " + JSON.stringify(row));
+						if (Number.isNaN(highPrice) === true || highPrice === 0) throw new Error("비정상 데이터 / row : " + JSON.stringify(row));
+						if (Number.isNaN(lowPrice) === true || lowPrice === 0) throw new Error("비정상 데이터 / row : " + JSON.stringify(row));
+						if (Number.isNaN(closePrice) === true || closePrice === 0) throw new Error("비정상 데이터 / row : " + JSON.stringify(row));
 						
-						var tickerDataList = resultData[tickerList[tickerCnt]];
-						if (Array.isArray(tickerDataList) === false) tickerDataList = [];
+						var tickerDataList = resultData[ticker];
+						if (Array.isArray(tickerDataList) === false) {
+							tickerDataList = [];
+							resultData[ticker] = tickerDataList;
+						}
 						tickerDataList.push({
-							close_date: date,
-							close_price: close
+							date: date,
+							openPrice: openPrice,
+							highPrice: highPrice,
+							lowPrice: lowPrice,
+							closePrice: closePrice
 						})
-						resultData[tickerList[tickerCnt]] = tickerDataList;
 						
-						colCnt = colCnt + 2;
+						colCnt = colCnt + 6;
 						tickerCnt++;
 					}
 					
 					rowCnt++;
 				})
 				
-				addChange(resultData);
+				addChange(resultData, tickerList);
+				resultData = deleteZeroDay(resultData, tickerList);
+				debugger
 				var param = getParam(resultData);
 				insertResultData(param);
 			})
 	        
-	        function addChange(resultData) {
-				Object.keys(resultData).forEach(function(ticker) {
-					var tickerDataList = resultData[ticker];
-					
-					tickerDataList.forEach(function(cur, idx) {
-						if (idx === 0) {
-							tickerDataList[idx].close_change = 0;
-							return;
-						}
-						
-						var change = round4(cur.close_price / tickerDataList[idx - 1].close_price - 1)
-						tickerDataList[idx].close_change = change;
-					})
+	        function deleteZeroDay(resultData, tickerList) {
+				var longTicker = tickerList[0];
+				var shortTicker = tickerList[1];
+				var longDataList = resultData[longTicker];
+				var shortDataList = resultData[shortTicker];
+				var tempResultData = {};
+				
+				tempResultData[longTicker] = [];
+				tempResultData[shortTicker] = [];
+				
+				longDataList.forEach(function(row, idx) {
+					if (idx === 0) return;
+
+					var longChange = row.change;
+					var shortChange = shortDataList[idx].change;
+					if (longChange === 0 || shortChange === 0) return;
+					tempResultData[longTicker].push(row);
+					tempResultData[shortTicker].push(shortDataList[idx]);
 				})
 				
-				return resultData;
+				return tempResultData;
+			}
+	        
+	        function addChange(resultData, tickerList) {
+				var longDataList = resultData[tickerList[0]];
+				var shortDataList = resultData[tickerList[1]];
+				
+				longDataList.forEach(function(row, idx) {
+					if (idx === 0) {
+						longDataList[idx].change = 0;
+						return;
+					}
+					
+					var change = round4(row.closePrice / longDataList[idx - 1].closePrice - 1);
+					longDataList[idx].change = change;
+				})
+				
+				shortDataList.forEach(function(row, idx) {
+					if (idx === 0) {
+						shortDataList[idx].change = 0;
+						return;
+					}
+					
+					var change = round4(row.closePrice / shortDataList[idx - 1].closePrice - 1)
+					shortDataList[idx].change = change;
+				})
 			}
 	        
 	        function getParam(resultData) {
