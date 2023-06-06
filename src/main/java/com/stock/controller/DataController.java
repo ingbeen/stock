@@ -91,4 +91,58 @@ public class DataController {
 		return result;
 	}
 	
+	@ResponseBody
+	@PostMapping("/insert/buyTicker")
+	public Map<String, Object> insertBuyTicker(@RequestBody Map<String, Object> param) {
+		Map<String, Object> result = new HashMap<>();
+		
+		try {
+			List<Map<String, Object>> buyTickerList = JsonUtil.getListMap((String) param.get("buyTickerList"));
+			int seq = Integer.parseInt(StringUtil.nvl(dataMapper.getLastSeq(), "0")) + 1;
+			int insertCnt = 0;
+			
+			List<Map<String, Object>> tempBuyTickerList = new ArrayList<>();
+			int limit = 1000;
+			for (Map<String, Object> buyTickerData : buyTickerList) {
+				
+				buyTickerData.put("seq", seq);
+				tempBuyTickerList.add(buyTickerData);
+				if (tempBuyTickerList.size() % limit == 0) {
+					insertCnt = insertCnt + dataMapper.insertBuyTicker(tempBuyTickerList);
+					tempBuyTickerList.clear();
+				}
+			}
+			
+			if (tempBuyTickerList.size() > 0) {
+				insertCnt = insertCnt + dataMapper.insertBuyTicker(tempBuyTickerList);
+			}
+			
+			result.put("insertCnt", insertCnt);
+			result.put("success", true);
+		} catch (Exception e) {
+			e.printStackTrace();
+			result.put("success", false);
+		}
+		
+		return result;
+	}
+	
+	@ResponseBody
+	@PostMapping("/select/buyTicker")
+	public Map<String, Object> selectBuyTicker(@RequestBody Map<String, Object> param) {
+		Map<String, Object> result = new HashMap<>();
+		
+		try {
+			int seq = (int) param.get("seq");
+			List<Map<String, Object>> buyTickerList = dataMapper.selectBuyTicker(seq);
+
+			result.put("buyTickerList", buyTickerList);
+			result.put("success", true);
+		} catch (Exception e) {
+			e.printStackTrace();
+			result.put("success", false);
+		}
+		
+		return result;
+	}
 }

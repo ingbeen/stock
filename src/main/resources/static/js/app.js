@@ -1,23 +1,147 @@
 (function() {
 	bind();
 //	$("#upload").trigger("click");
-	$("#run").trigger("click");
+//	$("#run").trigger("click");
+	$("#resultView").trigger("click");
 	
 	function bind() {
+		$("#resultView").on("click", function() {
+			var config = {
+				longTicker: "tqqq",
+				shortTicker: "sqqq",
+				tickerData: {},
+				longDataList: [],
+				shortDataList: [],
+				buyTickerList: [],
+				buyTickerData: {},
+			}
+			
+			
+			getBuyTickerList()
+				.then(function(buyTickerList) {
+					config.buyTickerList = buyTickerList;
+					buyTickerListToMap();
+					return getTickerData(config)
+				})
+				.then(function(tickerData) {
+					config.tickerData = tickerData;
+					config.longDataList = tickerData[config.longTicker];
+					config.shortDataList = tickerData[config.shortTicker];
+					runResult();
+				})
+				.catch(function(e) {
+					if (e !== undefined) console.log(e.stack);
+					alert("결과보기에 실패하였습니다.");
+				})
+			
+			function buyTickerListToMap() {
+				var buyTickerData = {};
+				config.buyTickerList.forEach(function(cur) {
+					var date = cur.date;
+					delete cur.date;
+					buyTickerData[date] = cur;
+				})
+				config.buyTickerData = buyTickerData;
+			}
+			
+			function runResult() {
+				var buyTickerData = config.buyTickerData;
+				var longDataList = config.longDataList;
+				var shortDataList = config.shortDataList;
+				var longTicker = config.longTicker;
+				var shortTicker = config.shortTicker;
+				var resultDataList = [];
+				
+				longDataList.forEach(function(longRow, idx) {
+					var date = longRow.date;
+					var shortRow = shortDataList[idx];
+					var successFlag = false;
+					var change = 0;
+					
+					if (buyTickerData.hasOwnProperty(date) === false || isEmptyObj(buyTickerData[date]) === true) return;
+					
+					if (buyTickerData[date].ticker === longTicker) {
+						if (longRow.change > 0) {
+							successFlag = true;
+						}
+						change = longRow.change; 
+					} else if (buyTickerData[date].ticker === shortTicker) {
+						if (shortRow.change > 0) {
+							successFlag = true;
+						}
+						change = shortRow.change; 
+					}
+						
+					var result = {
+						buyTicker: buyTickerData[date].ticker,
+						successFlag: successFlag,
+						change: change,
+						row: {}
+					}
+					result.row[longTicker] = longRow;
+					result.row[shortTicker] = shortRow;
+					
+					resultDataList.push(result);
+				})
+				
+				var successCnt = 0;
+				var failCnt = 0;
+				var sumSuccessChange = 0;
+				var sumFailChange = 0;
+				resultDataList.forEach(function(cur) {
+					if (cur.successFlag === true) {
+						successCnt++;
+						sumSuccessChange = round4(sumSuccessChange + cur.change)
+					} else if (cur.successFlag === false) {
+						failCnt++;
+						sumFailChange = round4(sumFailChange + cur.change)
+					}
+				})
+				
+				console.log(round4(successCnt / resultDataList.length) + " / " + round4(sumSuccessChange / successCnt));
+				console.log(round4(failCnt / resultDataList.length) + " / " + round4(sumFailChange / failCnt));
+			}
+					
+			function getBuyTickerList() {
+				return new Promise(function(resolve, reject) {
+					$.ajax({
+						type: "post",
+						url: "/data/select/buyTicker",
+						data: JSON.stringify({
+							seq: 1
+						}),
+						contentType: 'application/json; charset=utf-8',
+						dataType : "json"
+					})
+					.done(function(resp) {
+						if (resp.success === true) {
+							resolve(resp.buyTickerList);
+						} else {
+							reject();
+						}
+					})
+					.fail(function() {
+						reject();
+					})
+				})
+			}
+		})
 		
 		$("#run").on("click", function() {
 			var config = {
 				longTicker: "tqqq",
 				shortTicker: "sqqq",
+				tickerData: {},
 				startLength: 5,
 				endLength: 250,
 				dateInfo: {},
 				momentumDataByLength: {},
 				averageData: {},
-				momentumResultDataByLength: {}
+				momentumResultDataByLength: {},
+				buyTickerList: []
 			}
 			
-			getTickerData()
+			getTickerData(config)
 				.then(function(tickerData) {
 					config.tickerData = tickerData;
 					var longDataList = tickerData[config.longTicker];
@@ -36,38 +160,111 @@
 							continue;
 						}
 						
+						config.idxMsg = "[" + (idx + 1) + "/" + longDataList.length + "]" + " / ";
 						config.longDataList = tempLongDataList;
 						config.shortDataList = tempShortDataList;
 						runHandler();
-						console.log(idx);
-						if (idx > 2000) debugger;
 						idx++;
 					}
+					
+					insertBuyTickerList();
 				})
 				.catch(function(e) {
-					console.log(e.stack);
+					if (e !== undefined) console.log(e.stack);
 					alert("실행에 실패하였습니다.");
 				})
+	        
+	        function insertBuyTickerList() {
+				$.ajax({
+					type: "post",
+					url: "/data/insert/buyTicker",
+					data: JSON.stringify({
+						buyTickerList: JSON.stringify(config.buyTickerList)
+					}),
+					contentType: 'application/json; charset=utf-8',
+					dataType : "json"
+				})
+				.done(function(resp) {
+					if (resp.success === true) {
+						alert("실행 데이터 업로드 성공 (" + resp.insertCnt + " )");
+					} else {
+						alert("실행 데이터 업로드 실패");
+					}
+				})
+			}
 			
 			function runHandler() {
+				initDate();
+				if (isEmptyStr(config.buyTicker) === false) {
+					setBuyTickerList();
+				}
 				calculate();
 				initBestPosition();
 			}
 			
+			function setBuyTickerList() {
+				var buyTickerInfo = {};
+				buyTickerInfo.date = config.dateInfo.lastDate; 
+				buyTickerInfo.ticker = config.buyTicker;
+				buyTickerInfo.bestLength = config.bestLength;
+				buyTickerInfo.bestPercent = config.bestPercent;
+				buyTickerInfo.averageByPlus = config.averageByPlus;
+				buyTickerInfo.averageByMinus = config.averageByMinus;
+				
+				config.buyTickerList.push(buyTickerInfo);
+				console.log(config.idxMsg + JSON.stringify(buyTickerInfo));
+			}
+			
 			function initBestPosition() {
-				initBestMomentm();
-				debugger
+				initBuyTicker();
+				initBestAaverage();
+			}
+			
+			function initBestAaverage() {
+				// 에버리지 베스트 구하고
+				// 매수 시물레이션 실행
+				var averageData = config.averageData;
+				config.averageByPlus = round4((averageData.all.plus * 10 + averageData.fiveYearAgo.plus * 20 + averageData.threeYearAgo.plus * 30 + averageData.oneYearAgo.plus * 40) / 100);
+				config.averageByMinus = round4((averageData.all.minus * 10 + averageData.fiveYearAgo.minus * 20 + averageData.threeYearAgo.minus * 30 + averageData.oneYearAgo.minus * 40) / 100);
+			}
+			
+			function initBuyTicker() {
+				var successPercentData = {};
+				var maxLength = config.startLength;
 				while(maxLength <= config.endLength) {
-					var momentumResultData = config.momentumResultDataByLength[maxLength];
+					var momentumResultList = config.momentumResultDataByLength[maxLength];
+					var cnt = 0;
+					var successCnt = 0;
+					
+					momentumResultList.forEach(function(cur) {
+						cnt++;
+						if (cur.successFlag === true) successCnt++;
+					})
+					
+					successPercentData[maxLength] = round4(successCnt / cnt);
+					maxLength++;
+				}
+				
+				maxLength = config.startLength;
+				var bestLength = 0;
+				var bestPercent = 0;
+				while(maxLength <= config.endLength) {
+					var successPercent = successPercentData[maxLength];
+					
+					if (successPercent > bestPercent) {
+						bestLength = maxLength;
+						bestPercent = successPercent;
+					}
 					
 					maxLength++;
 				}
-				config.momentumResultDataByLength
+				
+				config.bestPercent = bestPercent;
+				config.bestLength = bestLength;
+				config.buyTicker = config.momentumDataByLength[bestLength][config.dateInfo.lastDate];
 			}
 			
 			function calculate() {
-				initDate();
-				
 				var maxLength = config.startLength
 				while(maxLength <= config.endLength) {
 					initMomentumDataByLength(maxLength);
@@ -90,8 +287,8 @@
 				var shortTicker = config.shortTicker;
 				var momentumData = config.momentumDataByLength[maxLength];
 				var buyTickerData = {};
-				var oneYearAgoResultList = [];
-				var oneYearAgoDate = config.dateInfo.oneYearAgoDate;
+				var momentumResultList = [];
+				var momentumResultDataByLength = config.momentumResultDataByLength;
 				
 				longDataList.forEach(function(longRow, idx) {
 					var date = longRow.date;
@@ -118,23 +315,19 @@
 						result.row[longTicker] = longRow;
 						result.row[shortTicker] = shortRow;
 						
-						if (date >= oneYearAgoDate) {
-							oneYearAgoResultList.push(result);
-						}
-						
+						momentumResultList.push(result);
 						buyTickerData = {};
 					}
 					
 					if (momentumData.hasOwnProperty(date) === false || isEmptyStr(momentumData[date]) === true) return;
-					 
+					
 					buyTickerData = {
 						buyFlag: true,
 						ticker: momentumData[date]
 					}
 				})
-				var momentumResultDataByLength = config.momentumResultDataByLength;
-				momentumResultDataByLength[maxLength] = {};
-				momentumResultDataByLength[maxLength].oneYearAgoResultList = oneYearAgoResultList;
+				
+				momentumResultDataByLength[maxLength] = momentumResultList.slice(-250);
 			}
 			
 			function initAverageChange() {
@@ -221,7 +414,7 @@
 				config.dateInfo.fiveYearAgoDate = fiveYearAgoDate;
 			}
 			
-			function initMomentumData(maxLength) {
+			function initMomentumDataByLength(maxLength) {
 				var lastChangeList = [];
 				var momentumData = {};
 				var longDataList = config.longDataList;
@@ -232,15 +425,18 @@
 					lastChangeList.shift();
 					
 					var weight = maxLength;
+					var idx = maxLength - 1;
 					var sumMomentum = 0;
-					lastChangeList.forEach(function(change) {
+					while(idx >= 0) {
+						var change = lastChangeList[idx];
 						if (change > 0) {
 							sumMomentum += 1 * weight;
 						} else if (change < 0) {
 							sumMomentum -= 1 * weight;
 						}
 						weight--;
-					})
+						idx--;
+					}
 					
 					var buyTicker = "";
 					if (sumMomentum > 0) {
@@ -253,30 +449,6 @@
 				})
 				
 				config.momentumDataByLength[maxLength] = momentumData;
-			}
-					
-			function getTickerData() {
-				return new Promise(function(resolve, reject) {
-					$.ajax({
-						type: "post",
-						url: "/data/select",
-						data: JSON.stringify({
-							tickerList: JSON.stringify([config.longTicker, config.shortTicker])
-						}),
-						contentType: 'application/json; charset=utf-8',
-						dataType : "json"
-					})
-					.done(function(resp) {
-						if (resp.success === true) {
-							resolve(resp.tickerData);
-						} else {
-							reject();
-						}
-					})
-					.fail(function() {
-						reject();
-					})
-				})
 			}
 		})
 		
@@ -449,9 +621,38 @@
 		})
 	}
 })();
+					
+function getTickerData(config) {
+	return new Promise(function(resolve, reject) {
+		$.ajax({
+			type: "post",
+			url: "/data/select",
+			data: JSON.stringify({
+				tickerList: JSON.stringify([config.longTicker, config.shortTicker])
+			}),
+			contentType: 'application/json; charset=utf-8',
+			dataType : "json"
+		})
+		.done(function(resp) {
+			if (resp.success === true) {
+				resolve(resp.tickerData);
+			} else {
+				reject();
+			}
+		})
+		.fail(function() {
+			reject();
+		})
+	})
+}
 
 function isEmptyStr(str) {
 	if (typeof str === "string" && str.length > 0) return false;
+	else return true;
+}
+
+function isEmptyObj(obj) {
+	if (typeof obj === "object" && Object.keys(obj).length > 0) return false;
 	else return true;
 }
 

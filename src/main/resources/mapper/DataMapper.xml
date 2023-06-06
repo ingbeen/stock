@@ -6,7 +6,6 @@
         select max(h_date)
 		from history
 		where ticker = #{value}
-		group by ticker
     </select>
 
     <insert id="insert" parameterType="List">
@@ -45,6 +44,48 @@
 		from history
 		where ticker = #{value}
 		order by h_date
+    </select>
+
+    <select id="getLastSeq" parameterType="String">
+		select max(seq)
+		from buy_ticker
+    </select>
+    
+    <insert id="insertBuyTicker" parameterType="List">
+		insert into buy_ticker 
+		(
+			seq
+			, b_date
+			, ticker
+			, best_length
+			, best_percent
+			, average_by_plus
+			, average_by_minus
+		) 
+		values 
+		<foreach collection="list" item="item" separator=",">
+		(
+			#{item.seq}
+			, #{item.date}
+			, #{item.ticker}
+			, #{item.bestLength}
+			, #{item.bestPercent}
+			, #{item.averageByPlus}
+			, #{item.averageByMinus}
+		)
+		</foreach>
+    </insert>
+
+    <select id="selectBuyTicker" parameterType="int">
+		select b_date as 'date'
+			, ticker
+			, best_length as 'bestLength'
+			, best_percent as 'bestPercent'
+			, average_by_plus as 'averageByPlus'
+			, average_by_minus as 'averageByMinus'
+		from buy_ticker
+		where seq = #{num}
+		order by b_date
     </select>
     
 </mapper>
