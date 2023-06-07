@@ -2,7 +2,7 @@
 	bind();
 //	$("#upload").trigger("click");
 //	$("#run").trigger("click");
-//	$("#resultView").trigger("click");
+	$("#resultView").trigger("click");
 	
 	function bind() {
 		$("#resultView").on("click", function() {
@@ -14,7 +14,6 @@
 				shortDataList: [],
 				buyTickerList: [],
 				buyTickerData: {},
-				maxLossMoney: 0,
 			}
 			
 			
@@ -52,8 +51,11 @@
 				var longTicker = config.longTicker;
 				var shortTicker = config.shortTicker;
 				var resultDataList = [];
+				var lossMoney = 0; 
 				var myStock = {
-					betMoney: 10000,
+					betMoney: 20000,
+					defaultBetMoney: 20000,
+					maxBetMoney: 40000,
 					positionTicker: "",
 					charge: 0.001,
 					profitAndLoss: 0,
@@ -63,8 +65,8 @@
 					lastYear: "0",
 					nextMonth: "0",
 					nextYear: "0",
+					maxLossMoney: 0,
 				}
-				var lossMoney = 0; 
 				
 				longDataList.forEach(function(longRow, idx) {
 					var date = longRow.date;
@@ -74,7 +76,8 @@
 					var successFlag = false;
 					var curChange = 0;
 					var charge = 0;
-					var moreBetAverage = 0;
+					
+//					if(date == "20230112") debugger;
 					
 					if (buyTickerData.hasOwnProperty(date) === false || isEmptyObj(buyTickerData[date]) === true) return;
 					
@@ -82,25 +85,24 @@
 						buyRow = longRow;
 						LastBuyRow = longDataList[idx - 1];
 						stopLoss = round4(buyTickerData[date].averageByMinus * 0.5);
-						moreBetAverage = buyTickerData[date].averageByPlus;
 					} else if (buyTickerData[date].ticker === shortTicker) {
 						buyRow = shortDataList[idx];
 						LastBuyRow = shortDataList[idx - 1];
 						stopLoss = round4(buyTickerData[date].averageByPlus * -0.5);
-						moreBetAverage = buyTickerData[date].averageByMinus * -1;
-					}
-					
-					var lossPrice = round4(buyRow.lowPrice / LastBuyRow.closePrice - 1);
-					if (lossPrice < stopLoss) {
-						curChange = stopLoss;
-					} else {
-						curChange = buyRow.change;
 					}
 					
 					if (myStock.positionTicker !== buyTickerData[date].ticker) {
 						charge = round2(myStock.betMoney * myStock.charge);
 					}
 					myStock.positionTicker = buyTickerData[date].ticker;
+					
+					var lossPrice = round4(buyRow.lowPrice / LastBuyRow.closePrice - 1);
+					if (lossPrice < stopLoss) {
+						curChange = stopLoss;
+						myStock.positionTicker = "";
+					} else {
+						curChange = buyRow.change;
+					}
 					
 					var monthDate = moment(date).format("YYYYMM");
 					var yearDate = moment(date).format("YYYY");
@@ -140,7 +142,16 @@
 							profitAndLoss: 0
 						})
 						lastIdxByYearList++;
+						myStock.betMoney = myStock.defaultBetMoney;
 					}
+					
+					myStock.betMoney = round2(myStock.betMoney + myStock.betMoney * curChange - charge);
+					if (myStock.defaultBetMoney > myStock.betMoney) {
+						myStock.betMoney = myStock.defaultBetMoney;
+					} else if (myStock.maxBetMoney < myStock.betMoney) {
+						myStock.betMoney = myStock.maxBetMoney; 
+					}
+					
 					
 					myStock.profitAndLoss = round2(myStock.profitAndLoss + myStock.betMoney * curChange - charge);
 					profitAndLossListByMonth[lastIdxByMonthList].profitAndLoss = round2(profitAndLossListByMonth[lastIdxByMonthList].profitAndLoss + myStock.betMoney * curChange - charge);
@@ -150,10 +161,11 @@
 						successFlag = true;
 						lossMoney = 0;
 					} else {
-						lossMoney = round2(failCnt + (myStock.betMoney * curChange - charge));
-						if (lossMoney > config.lossMoney) {
-							config.maxFailCnt = failCnt;
+						lossMoney = round2(lossMoney + (myStock.betMoney * curChange - charge));
+						if (lossMoney < myStock.maxLossMoney) {
+							myStock.maxLossMoney = lossMoney;
 						}
+//						if (myStock.maxLossMoney == -23384.85)debugger
 					}
 						
 					var result = {
@@ -169,6 +181,8 @@
 					resultDataList.push(result);
 				})
 				
+				console.log("myStock.maxLossMoney : " + myStock.maxLossMoney);
+				
 				var sumProfitAndLossByMonth = 0;
 				myStock.profitAndLossListByMonth.forEach(function(cur) {
 					sumProfitAndLossByMonth = round2(sumProfitAndLossByMonth + cur.profitAndLoss);
@@ -179,7 +193,7 @@
 					sumProfitAndLossByYear = round2(sumProfitAndLossByYear + cur.profitAndLoss);
 				})
 				
-				console.log(myStock.profitAndLoss);
+				console.log("myStock.profitAndLoss : " + myStock.profitAndLoss);
 				console.log(round2(sumProfitAndLossByMonth / myStock.profitAndLossListByMonth.length));
 				console.log(round2(sumProfitAndLossByYear / myStock.profitAndLossListByYear.length));
 				
@@ -204,7 +218,7 @@
 				
 				console.log(round4(successCnt / resultDataList.length) + " / " + round4(sumSuccessChange / successCnt));
 				console.log(round4(failCnt / resultDataList.length) + " / " + round4(sumFailChange / failCnt));
-				console.log(maxBetMoney);
+				console.log("maxBetMoney : " + maxBetMoney);
 				debugger
 			}
 					
@@ -214,7 +228,7 @@
 						type: "post",
 						url: "/data/select/buyTicker",
 						data: JSON.stringify({
-							seq: 2
+							seq: 3
 						}),
 						contentType: 'application/json; charset=utf-8',
 						dataType : "json"
@@ -239,7 +253,7 @@
 				shortTicker: "sqqq",
 				tickerData: {},
 				startLength: 5,
-				endLength: 250,
+				endLength: 30,
 				dateInfo: {},
 				momentumDataByLength: {},
 				averageData: {},
@@ -273,7 +287,7 @@
 						idx++;
 					}
 					
-					insertBuyTickerList();
+//					insertBuyTickerList();
 				})
 				.catch(function(e) {
 					if (e !== undefined) console.log(e.stack);
@@ -292,7 +306,7 @@
 				})
 				.done(function(resp) {
 					if (resp.success === true) {
-						alert("실행 데이터 업로드 성공 (" + resp.insertCnt + " )");
+						alert("실행 데이터 업로드 성공 (" + resp.insertCnt + ")");
 					} else {
 						alert("실행 데이터 업로드 실패");
 					}
@@ -327,8 +341,6 @@
 			}
 			
 			function initBestAaverage() {
-				// 에버리지 베스트 구하고
-				// 매수 시물레이션 실행
 				var averageData = config.averageData;
 				config.averageByPlus = round4((averageData.all.plus * 10 + averageData.fiveYearAgo.plus * 20 + averageData.threeYearAgo.plus * 30 + averageData.oneYearAgo.plus * 40) / 100);
 				config.averageByMinus = round4((averageData.all.minus * 10 + averageData.fiveYearAgo.minus * 20 + averageData.threeYearAgo.minus * 30 + averageData.oneYearAgo.minus * 40) / 100);
@@ -351,11 +363,10 @@
 					maxLength++;
 				}
 				
-//				maxLength = config.startLength;
-				maxLength = 5;
+				maxLength = config.startLength;
 				var bestLength = 0;
 				var bestPercent = 0;
-//				while(maxLength <= config.endLength) {
+				while(maxLength <= config.endLength) {
 					var successPercent = successPercentData[maxLength];
 					
 					if (successPercent > bestPercent) {
@@ -364,7 +375,7 @@
 					}
 					
 					maxLength++;
-//				}
+				}
 				
 				config.bestPercent = bestPercent;
 				config.bestLength = bestLength;
@@ -530,6 +541,8 @@
 					lastChangeList.push(row.change);
 					if (lastChangeList.length <= maxLength) return;
 					lastChangeList.shift();
+					
+//					if (row.date == "20230112" && maxLength == 30)debugger;
 					
 					var weight = maxLength;
 					var idx = maxLength - 1;
