@@ -2,7 +2,7 @@
 	bind();
 //	$("#upload").trigger("click");
 //	$("#run").trigger("click");
-	$("#resultView").trigger("click");
+//	$("#resultView").trigger("click");
 	
 	function bind() {
 		$("#resultView").on("click", function() {
@@ -14,6 +14,7 @@
 				shortDataList: [],
 				buyTickerList: [],
 				buyTickerData: {},
+				maxLossMoney: 0,
 			}
 			
 			
@@ -52,7 +53,7 @@
 				var shortTicker = config.shortTicker;
 				var resultDataList = [];
 				var myStock = {
-					betMoney: 5000,
+					betMoney: 10000,
 					positionTicker: "",
 					charge: 0.001,
 					profitAndLoss: 0,
@@ -63,6 +64,7 @@
 					nextMonth: "0",
 					nextYear: "0",
 				}
+				var lossMoney = 0; 
 				
 				longDataList.forEach(function(longRow, idx) {
 					var date = longRow.date;
@@ -146,6 +148,12 @@
 					
 					if (curChange > 0) {
 						successFlag = true;
+						lossMoney = 0;
+					} else {
+						lossMoney = round2(failCnt + (myStock.betMoney * curChange - charge));
+						if (lossMoney > config.lossMoney) {
+							config.maxFailCnt = failCnt;
+						}
 					}
 						
 					var result = {
@@ -206,7 +214,7 @@
 						type: "post",
 						url: "/data/select/buyTicker",
 						data: JSON.stringify({
-							seq: 1
+							seq: 2
 						}),
 						contentType: 'application/json; charset=utf-8',
 						dataType : "json"
@@ -343,10 +351,11 @@
 					maxLength++;
 				}
 				
-				maxLength = config.startLength;
+//				maxLength = config.startLength;
+				maxLength = 5;
 				var bestLength = 0;
 				var bestPercent = 0;
-				while(maxLength <= config.endLength) {
+//				while(maxLength <= config.endLength) {
 					var successPercent = successPercentData[maxLength];
 					
 					if (successPercent > bestPercent) {
@@ -355,7 +364,7 @@
 					}
 					
 					maxLength++;
-				}
+//				}
 				
 				config.bestPercent = bestPercent;
 				config.bestLength = bestLength;
