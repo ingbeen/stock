@@ -52,8 +52,7 @@
 				var shortTicker = config.shortTicker;
 				var resultDataList = [];
 				var myStock = {
-					betDefault: 10000,
-					betMoney: 10000,
+					betMoney: 5000,
 					positionTicker: "",
 					charge: 0.001,
 					profitAndLoss: 0,
@@ -95,16 +94,6 @@
 					} else {
 						curChange = buyRow.change;
 					}
-					
-//					if (resultDataList.length > 0) {
-//						var lastChange = resultDataList[resultDataList.length - 1].change;
-//						if (lastChange < 0) {
-//							myStock.betMoney = Math.round(myStock.betMoney + (myStock.betMoney * lastChange * -0.5 / moreBetAverage));
-//							if (myStock.betMoney > myStock.betDefault * 5) {
-//								myStock.betMoney = myStock.betDefault * 5;
-//							}
-//						}
-//					}
 					
 					if (myStock.positionTicker !== buyTickerData[date].ticker) {
 						charge = round2(myStock.betMoney * myStock.charge);
@@ -157,7 +146,6 @@
 					
 					if (curChange > 0) {
 						successFlag = true;
-						myStock.betMoney = myStock.betDefault;
 					}
 						
 					var result = {
