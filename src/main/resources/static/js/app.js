@@ -51,43 +51,147 @@
 				var longTicker = config.longTicker;
 				var shortTicker = config.shortTicker;
 				var resultDataList = [];
+				var myStock = {
+					betDefault: 10000,
+					betMoney: 10000,
+					positionTicker: "",
+					charge: 0.001,
+					profitAndLoss: 0,
+					profitAndLossListByMonth: [],
+					profitAndLossListByYear: [],
+					lastMonth: "0",
+					lastYear: "0",
+					nextMonth: "0",
+					nextYear: "0",
+				}
 				
 				longDataList.forEach(function(longRow, idx) {
 					var date = longRow.date;
-					var shortRow = shortDataList[idx];
+					var buyRow = {};
+					var LastBuyRow = {};
+					var stopLoss = 0;
 					var successFlag = false;
-					var change = 0;
+					var curChange = 0;
+					var charge = 0;
+					var moreBetAverage = 0;
 					
 					if (buyTickerData.hasOwnProperty(date) === false || isEmptyObj(buyTickerData[date]) === true) return;
 					
 					if (buyTickerData[date].ticker === longTicker) {
-						if (longRow.change > 0) {
-							successFlag = true;
-						}
-						change = longRow.change; 
+						buyRow = longRow;
+						LastBuyRow = longDataList[idx - 1];
+						stopLoss = round4(buyTickerData[date].averageByMinus * 0.5);
+						moreBetAverage = buyTickerData[date].averageByPlus;
 					} else if (buyTickerData[date].ticker === shortTicker) {
-						if (shortRow.change > 0) {
-							successFlag = true;
-						}
-						change = shortRow.change; 
+						buyRow = shortDataList[idx];
+						LastBuyRow = shortDataList[idx - 1];
+						stopLoss = round4(buyTickerData[date].averageByPlus * -0.5);
+						moreBetAverage = buyTickerData[date].averageByMinus * -1;
+					}
+					
+					var lossPrice = round4(buyRow.lowPrice / LastBuyRow.closePrice - 1);
+					if (lossPrice < stopLoss) {
+						curChange = stopLoss;
+					} else {
+						curChange = buyRow.change;
+					}
+					
+//					if (resultDataList.length > 0) {
+//						var lastChange = resultDataList[resultDataList.length - 1].change;
+//						if (lastChange < 0) {
+//							myStock.betMoney = Math.round(myStock.betMoney + (myStock.betMoney * lastChange * -0.5 / moreBetAverage));
+//							if (myStock.betMoney > myStock.betDefault * 5) {
+//								myStock.betMoney = myStock.betDefault * 5;
+//							}
+//						}
+//					}
+					
+					if (myStock.positionTicker !== buyTickerData[date].ticker) {
+						charge = round2(myStock.betMoney * myStock.charge);
+					}
+					myStock.positionTicker = buyTickerData[date].ticker;
+					
+					var monthDate = moment(date).format("YYYYMM");
+					var yearDate = moment(date).format("YYYY");
+					if (myStock.nextMonth <= monthDate) {
+						myStock.nextMonth = moment(date).add("1","M").startOf("M").format("YYYYMM");
+						myStock.lastMonth = moment(date).format("YYYYMM");
+					}
+					
+					if (myStock.nextYear <= yearDate) {
+						myStock.nextYear = moment(date).add("1","y").startOf("y").format("YYYY");
+						myStock.lastYear = moment(date).format("YYYY");
+					}
+					
+					var profitAndLossListByMonth = myStock.profitAndLossListByMonth;
+					var profitAndLossListByYear = myStock.profitAndLossListByYear;
+					var lastIdxByMonthList = profitAndLossListByMonth.length - 1;
+					var lastIdxByYearList = profitAndLossListByYear.length - 1;
+					var curLastMonth = "";
+					var cyrLastYear = "";
+					
+					if (profitAndLossListByMonth.length > 0) {
+						curLastMonth = profitAndLossListByMonth[lastIdxByMonthList].date;
+						cyrLastYear = profitAndLossListByYear[lastIdxByYearList].date;
+					}
+					
+					if (curLastMonth !== myStock.lastMonth) {
+						myStock.profitAndLossListByMonth.push({
+							date: myStock.lastMonth,
+							profitAndLoss: 0
+						})
+						lastIdxByMonthList++;
+					}
+					
+					if (cyrLastYear !== myStock.lastYear) {
+						myStock.profitAndLossListByYear.push({
+							date: myStock.lastYear,
+							profitAndLoss: 0
+						})
+						lastIdxByYearList++;
+					}
+					
+					myStock.profitAndLoss = round2(myStock.profitAndLoss + myStock.betMoney * curChange - charge);
+					profitAndLossListByMonth[lastIdxByMonthList].profitAndLoss = round2(profitAndLossListByMonth[lastIdxByMonthList].profitAndLoss + myStock.betMoney * curChange - charge);
+					profitAndLossListByYear[lastIdxByYearList].profitAndLoss = round2(profitAndLossListByYear[lastIdxByYearList].profitAndLoss + myStock.betMoney * curChange - charge);
+					
+					if (curChange > 0) {
+						successFlag = true;
+						myStock.betMoney = myStock.betDefault;
 					}
 						
 					var result = {
 						buyTicker: buyTickerData[date].ticker,
 						successFlag: successFlag,
-						change: change,
+						change: curChange,
+						betMoney: myStock.betMoney,
 						row: {}
 					}
 					result.row[longTicker] = longRow;
-					result.row[shortTicker] = shortRow;
+					result.row[shortTicker] = shortDataList[idx];
 					
 					resultDataList.push(result);
 				})
+				
+				var sumProfitAndLossByMonth = 0;
+				myStock.profitAndLossListByMonth.forEach(function(cur) {
+					sumProfitAndLossByMonth = round2(sumProfitAndLossByMonth + cur.profitAndLoss);
+				})
+				
+				var sumProfitAndLossByYear = 0;
+				myStock.profitAndLossListByYear.forEach(function(cur) {
+					sumProfitAndLossByYear = round2(sumProfitAndLossByYear + cur.profitAndLoss);
+				})
+				
+				console.log(myStock.profitAndLoss);
+				console.log(round2(sumProfitAndLossByMonth / myStock.profitAndLossListByMonth.length));
+				console.log(round2(sumProfitAndLossByYear / myStock.profitAndLossListByYear.length));
 				
 				var successCnt = 0;
 				var failCnt = 0;
 				var sumSuccessChange = 0;
 				var sumFailChange = 0;
+				var maxBetMoney = 0;
 				resultDataList.forEach(function(cur) {
 					if (cur.successFlag === true) {
 						successCnt++;
@@ -96,10 +200,16 @@
 						failCnt++;
 						sumFailChange = round4(sumFailChange + cur.change)
 					}
+					
+					if (cur.betMoney > maxBetMoney) {
+						maxBetMoney = cur.betMoney;
+					}
 				})
 				
 				console.log(round4(successCnt / resultDataList.length) + " / " + round4(sumSuccessChange / successCnt));
 				console.log(round4(failCnt / resultDataList.length) + " / " + round4(sumFailChange / failCnt));
+				console.log(maxBetMoney);
+				debugger
 			}
 					
 			function getBuyTickerList() {
