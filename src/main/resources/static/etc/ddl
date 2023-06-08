@@ -1,0 +1,27 @@
+-- stock.buy_ticker definition
+
+CREATE TABLE `buy_ticker` (
+  `seq` int(11) NOT NULL,
+  `b_date` varchar(8) NOT NULL,
+  `ticker` varchar(10) NOT NULL,
+  `best_length` int(11) NOT NULL,
+  `best_percent` decimal(5,4) NOT NULL,
+  `average_by_plus` decimal(5,4) NOT NULL,
+  `average_by_minus` decimal(5,4) NOT NULL,
+  `load_dttm` datetime DEFAULT current_timestamp(),
+  PRIMARY KEY (`seq`,`b_date`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+
+-- stock.history definition
+
+CREATE TABLE `history` (
+  `ticker` varchar(10) NOT NULL,
+  `h_date` varchar(8) NOT NULL,
+  `open_price` decimal(10,2) NOT NULL,
+  `high_price` decimal(10,2) NOT NULL,
+  `low_price` decimal(10,2) NOT NULL,
+  `close_price` decimal(10,2) NOT NULL,
+  `h_change` decimal(5,4) NOT NULL,
+  PRIMARY KEY (`ticker`,`h_date`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;

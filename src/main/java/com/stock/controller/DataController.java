@@ -116,7 +116,8 @@ public class DataController {
 			if (tempBuyTickerList.size() > 0) {
 				insertCnt = insertCnt + dataMapper.insertBuyTicker(tempBuyTickerList);
 			}
-			
+
+			result.put("seq", seq);
 			result.put("insertCnt", insertCnt);
 			result.put("success", true);
 		} catch (Exception e) {

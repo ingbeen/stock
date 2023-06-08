@@ -1,11 +1,63 @@
 (function() {
 	bind();
 //	$("#upload").trigger("click");
-//	$("#run").trigger("click");
-	$("#resultView").trigger("click");
+//	$("#expectedTicker").trigger("click");
+//	$("#expectedTicker_loop").trigger("click");
+//	$("#buyResult").trigger("click");
+//	$("#buyResult_loop").trigger("click");
 	
 	function bind() {
-		$("#resultView").on("click", function() {
+		
+//		$("#expectedTicker_loop").on("click", function(e, param) {
+//			var config = {
+//				longTicker: "tqqq",
+//				shortTicker: "sqqq",
+//				tickerData: {},
+//				startLength: 5,
+//				endLength: 5,
+//				dateInfo: {},
+//				momentumDataByLength: {},
+//				averageData: {},
+//				momentumResultDataByLength: {},
+//				buyTickerList: [],
+//			}
+//			
+//			expectedTickerConfig.originConfigStr = JSON.stringify(config);
+//			
+//			getTickerData(config)
+//				.then(function(tickerData) {
+//					expectedTickerConfig.originTickerData = tickerData;
+//					
+//					// loop가 아닐경우 위 config와 다른점을 명시한다
+//					if (!isEmptyObj(param) && param.notLoop === true) {
+//						config.notLoop = true;
+//						config.endLength = 20;
+//					}
+//					
+//					$("#expectedTicker").trigger("click", config);
+//				})
+//				.catch(function(e) {
+//					if (e !== undefined) console.log(e.stack);
+//					alert("실행에 실패하였습니다.");
+//				})
+//		})
+//		
+//		$("#expectedTicker").on("click", function(e, config) {
+//			if (isEmptyObj(config)) {
+//				$("#expectedTicker_loop").trigger("click", {notLoop: true});
+//				return;
+//			}
+//			
+//			config.tickerData = expectedTickerConfig.originTickerData;
+		
+		
+		var buyResultConfig = {
+			originConfigStr: "",
+			loopCnt: 1,
+			loopEndCnt: 250,
+		}
+		
+		$("#buyResult_loop").on("click", function(e, param) {
 			var config = {
 				longTicker: "tqqq",
 				shortTicker: "sqqq",
@@ -14,8 +66,25 @@
 				shortDataList: [],
 				buyTickerList: [],
 				buyTickerData: {},
+				seq: 1,
 			}
 			
+			buyResultConfig.originConfigStr = JSON.stringify(config);
+					
+			// loop가 아닐경우 위 config와 다른점을 명시한다
+			if (!isEmptyObj(param) && param.notLoop === true) {
+				config.notLoop = true;
+				config.seq = 1;
+			}
+			
+			$("#buyResult").trigger("click", config);
+		})
+		
+		$("#buyResult").on("click", function(e, config) {
+			if (isEmptyObj(config)) {
+				$("#buyResult_loop").trigger("click", {notLoop: true});
+				return;
+			}
 			
 			getBuyTickerList()
 				.then(function(buyTickerList) {
@@ -27,7 +96,7 @@
 					config.tickerData = tickerData;
 					config.longDataList = tickerData[config.longTicker];
 					config.shortDataList = tickerData[config.shortTicker];
-					runResult();
+					buyResult();
 				})
 				.catch(function(e) {
 					if (e !== undefined) console.log(e.stack);
@@ -44,7 +113,7 @@
 				config.buyTickerData = buyTickerData;
 			}
 			
-			function runResult() {
+			function buyResult() {
 				var buyTickerData = config.buyTickerData;
 				var longDataList = config.longDataList;
 				var shortDataList = config.shortDataList;
@@ -53,9 +122,9 @@
 				var resultDataList = [];
 				var lossMoney = 0; 
 				var myStock = {
-					betMoney: 20000,
-					defaultBetMoney: 20000,
-					maxBetMoney: 40000,
+					betMoney: 15000,
+					defaultBetMoney: 15000,
+					maxBetMoney: 30000,
 					positionTicker: "",
 					charge: 0.001,
 					profitAndLoss: 0,
@@ -121,11 +190,11 @@
 					var lastIdxByMonthList = profitAndLossListByMonth.length - 1;
 					var lastIdxByYearList = profitAndLossListByYear.length - 1;
 					var curLastMonth = "";
-					var cyrLastYear = "";
+					var curLastYear = "";
 					
 					if (profitAndLossListByMonth.length > 0) {
 						curLastMonth = profitAndLossListByMonth[lastIdxByMonthList].date;
-						cyrLastYear = profitAndLossListByYear[lastIdxByYearList].date;
+						curLastYear = profitAndLossListByYear[lastIdxByYearList].date;
 					}
 					
 					if (curLastMonth !== myStock.lastMonth) {
@@ -136,7 +205,7 @@
 						lastIdxByMonthList++;
 					}
 					
-					if (cyrLastYear !== myStock.lastYear) {
+					if (curLastYear !== myStock.lastYear) {
 						myStock.profitAndLossListByYear.push({
 							date: myStock.lastYear,
 							profitAndLoss: 0
@@ -223,12 +292,13 @@
 			}
 					
 			function getBuyTickerList() {
+				console.log("config.seq : " + config.seq);
 				return new Promise(function(resolve, reject) {
 					$.ajax({
 						type: "post",
 						url: "/data/select/buyTicker",
 						data: JSON.stringify({
-							seq: 3
+							seq: config.seq
 						}),
 						contentType: 'application/json; charset=utf-8',
 						dataType : "json"
@@ -247,52 +317,81 @@
 			}
 		})
 		
-		$("#run").on("click", function() {
+		
+		var expectedTickerConfig = {
+			tickerData: {},
+			originConfigStr: "",
+			loopCnt: 1,
+			loopEndCnt: 250,
+		}
+		
+		$("#expectedTicker_loop").on("click", function(e, param) {
 			var config = {
 				longTicker: "tqqq",
 				shortTicker: "sqqq",
 				tickerData: {},
 				startLength: 5,
-				endLength: 30,
+				endLength: 5,
 				dateInfo: {},
 				momentumDataByLength: {},
 				averageData: {},
 				momentumResultDataByLength: {},
-				buyTickerList: []
+				buyTickerList: [],
 			}
+			
+			expectedTickerConfig.originConfigStr = JSON.stringify(config);
 			
 			getTickerData(config)
 				.then(function(tickerData) {
-					config.tickerData = tickerData;
-					var longDataList = tickerData[config.longTicker];
-					var shortDataList = tickerData[config.shortTicker];
-					var tempLongDataList = [];
-					var tempShortDataList = [];
+					expectedTickerConfig.tickerData = tickerData;
 					
-					var fiveYearlaterDate = moment(longDataList[0].date, "YYYYMMDD").add(5, 'year').format("YYYYMMDD");
-					var idx = 0;
-					while(idx < longDataList.length) {
-						tempLongDataList.push(longDataList[idx]);
-						tempShortDataList.push(shortDataList[idx]);
-						
-						if (longDataList[idx].date < fiveYearlaterDate) {
-							idx++;
-							continue;
-						}
-						
-						config.idxMsg = "[" + (idx + 1) + "/" + longDataList.length + "]" + " / ";
-						config.longDataList = tempLongDataList;
-						config.shortDataList = tempShortDataList;
-						runHandler();
-						idx++;
+					// loop가 아닐경우 위 config와 다른점을 명시한다
+					if (!isEmptyObj(param) && param.notLoop === true) {
+						config.notLoop = true;
+						config.endLength = 20;
 					}
 					
-//					insertBuyTickerList();
+					$("#expectedTicker").trigger("click", config);
 				})
 				.catch(function(e) {
 					if (e !== undefined) console.log(e.stack);
 					alert("실행에 실패하였습니다.");
 				})
+		})
+		
+		$("#expectedTicker").on("click", function(e, config) {
+			if (isEmptyObj(config)) {
+				$("#expectedTicker_loop").trigger("click", {notLoop: true});
+				return;
+			}
+			
+			config.tickerData = expectedTickerConfig.tickerData;
+			
+			var tickerData = config.tickerData;
+			var longDataList = tickerData[config.longTicker];
+			var shortDataList = tickerData[config.shortTicker];
+			var tempLongDataList = [];
+			var tempShortDataList = [];
+			
+			var fiveYearlaterDate = moment(longDataList[0].date, "YYYYMMDD").add(5, 'year').format("YYYYMMDD");
+			var idx = 0;
+			while(idx < longDataList.length) {
+				tempLongDataList.push(longDataList[idx]);
+				tempShortDataList.push(shortDataList[idx]);
+				
+				if (longDataList[idx].date < fiveYearlaterDate) {
+					idx++;
+					continue;
+				}
+				
+				config.idxMsg = "[" + (idx + 1) + "/" + longDataList.length + "]" + " / ";
+				config.longDataList = tempLongDataList;
+				config.shortDataList = tempShortDataList;
+				runHandler();
+				idx++;
+			}
+			
+			insertBuyTickerList();
 	        
 	        function insertBuyTickerList() {
 				$.ajax({
@@ -305,21 +404,35 @@
 					dataType : "json"
 				})
 				.done(function(resp) {
-					if (resp.success === true) {
-						alert("실행 데이터 업로드 성공 (" + resp.insertCnt + ")");
+					if (config.notLoop === true) {
+						if (resp.success === true) {
+							alert("실행 데이터 업로드 성공 (seq : " + resp.seq + " / insertCnt : " + resp.insertCnt + ")");
+						} else {
+							alert("실행 데이터 업로드 실패");
+						}
 					} else {
-						alert("실행 데이터 업로드 실패");
+						var originConfig = JSON.parse(expectedTickerConfig.originConfigStr);
+						originConfig.endLength = config.endLength;
+						originConfig.endLength++;
+
+						console.log("expectedTickerConfig.loopCnt : " + expectedTickerConfig.loopCnt);
+						if (expectedTickerConfig.loopEndCnt < originConfig.endLength) {
+							alert("반복 실행 데이터 업로드 성공 (last seq : " + resp.seq + " / loopCnt : " + expectedTickerConfig.loopCnt + ")");
+						} else {
+							expectedTickerConfig.loopCnt++;
+							$("#expectedTicker").trigger("click", originConfig);
+						}
 					}
 				})
 			}
 			
 			function runHandler() {
 				initDate();
+				calculate();
+				initBestPosition();
 				if (isEmptyStr(config.buyTicker) === false) {
 					setBuyTickerList();
 				}
-				calculate();
-				initBestPosition();
 			}
 			
 			function setBuyTickerList() {
@@ -379,7 +492,11 @@
 				
 				config.bestPercent = bestPercent;
 				config.bestLength = bestLength;
-				config.buyTicker = config.momentumDataByLength[bestLength][config.dateInfo.lastDate];
+				if (bestLength === 0) {
+					config.buyTicker = "";
+				} else {
+					config.buyTicker = config.momentumDataByLength[bestLength][config.dateInfo.lastDate];
+				}
 			}
 			
 			function calculate() {
@@ -412,6 +529,7 @@
 					var date = longRow.date;
 					var successFlag = false;
 					
+					// 아래의 buyTickerData에 데이터가 존재해야됨.
 					if (buyTickerData.buyFlag === true) {
 						var shortRow = shortDataList[idx];
 						
@@ -426,6 +544,7 @@
 						}
 						
 						var result = {
+							date: date,
 							buyTicker: buyTickerData.ticker,
 							successFlag: successFlag,
 							row: {}
@@ -437,15 +556,19 @@
 						buyTickerData = {};
 					}
 					
+					// momentumDataByLength는 다음날의 사야될 ticker를 알려준다
 					if (momentumData.hasOwnProperty(date) === false || isEmptyStr(momentumData[date]) === true) return;
 					
+					// buyTickerData.buyFlag = true로 바꾸면서 다음 거래일날 buyTickerData.ticker에 대한 successFlag값을 구할수 있음.
 					buyTickerData = {
 						buyFlag: true,
 						ticker: momentumData[date]
 					}
 				})
 				
-				momentumResultDataByLength[maxLength] = momentumResultList.slice(-250);
+				// 0 :{date: '20151118', buyTicker: 'tqqq', successFlag: true, row: {…}}
+				// 설명 : 20151118에 tqqq를 샀더니 successFlag:true(성공)을 했다
+				momentumResultDataByLength[maxLength] = momentumResultList.slice(config.endLength * -1);
 			}
 			
 			function initAverageChange() {
@@ -565,6 +688,8 @@
 						buyTicker = config.shortTicker;
 					}
 					
+					// {20160505 : tqqq}
+					// 설명 : 20160505의 다음 거래일날 tqqq를 사라
 					momentumData[row.date] = buyTicker;
 				})
 				
