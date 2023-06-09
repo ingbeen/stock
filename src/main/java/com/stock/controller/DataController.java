@@ -146,4 +146,29 @@ public class DataController {
 		
 		return result;
 	}
+	
+	@ResponseBody
+	@PostMapping("/insert/buyResult")
+	public Map<String, Object> insertBuyResult(@RequestBody Map<String, Object> param) {
+		Map<String, Object> result = new HashMap<>();
+		
+		try {
+			Map<String, Object> buyResultData = JsonUtil.getMap((String) param.get("buyResultData"));
+			int subSeq = Integer.parseInt(StringUtil.nvl(dataMapper.getLastSeq(), "0")) + 1;
+			int insertCnt = 0;
+			
+			buyResultData.put("subSeq", subSeq);
+			insertCnt = dataMapper.insertBuyResult(buyResultData);
+			
+			result.put("seq", buyResultData.get("seq"));
+			result.put("subSeq", subSeq);
+			result.put("insertCnt", insertCnt);
+			result.put("success", true);
+		} catch (Exception e) {
+			e.printStackTrace();
+			result.put("success", false);
+		}
+		
+		return result;
+	}
 }
