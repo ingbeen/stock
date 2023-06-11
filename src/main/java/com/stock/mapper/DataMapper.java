@@ -14,6 +14,7 @@ public interface DataMapper {
 	String getLastSeq();
 	int insertBuyTicker(List<Map<String, Object>> buyTickerList);
 	List<Map<String, Object>> selectBuyTicker(int seq);
+	String getLastSubSeq(int subSeq);
 	int insertBuyResult(Map<String, Object> buyResultData);
 
 }

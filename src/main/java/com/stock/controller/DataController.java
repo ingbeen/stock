@@ -153,14 +153,15 @@ public class DataController {
 		Map<String, Object> result = new HashMap<>();
 		
 		try {
-			Map<String, Object> buyResultData = JsonUtil.getMap((String) param.get("buyResultData"));
-			int subSeq = Integer.parseInt(StringUtil.nvl(dataMapper.getLastSeq(), "0")) + 1;
+			Map<String, Object> buyResultData = (Map<String, Object>) param.get("buyResultData");
+			int seq = (int) param.get("seq");
+			int subSeq = Integer.parseInt(StringUtil.nvl(dataMapper.getLastSubSeq(seq), "0")) + 1;
 			int insertCnt = 0;
 			
 			buyResultData.put("subSeq", subSeq);
 			insertCnt = dataMapper.insertBuyResult(buyResultData);
 			
-			result.put("seq", buyResultData.get("seq"));
+			result.put("seq", seq);
 			result.put("subSeq", subSeq);
 			result.put("insertCnt", insertCnt);
 			result.put("success", true);

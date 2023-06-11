@@ -23,7 +23,6 @@ CREATE TABLE `buy_ticker` (
   `average_by_plus` decimal(5,4) NOT NULL,
   `average_by_minus` decimal(5,4) NOT NULL,
   `load_dttm` datetime DEFAULT current_timestamp(),
-  `weight` decimal(5,4) NOT NULL,
   PRIMARY KEY (`seq`,`b_date`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 

@@ -57,7 +57,6 @@
 			seq
 			, b_date
 			, ticker
-			, weight
 			, best_length
 			, best_percent
 			, average_by_plus
@@ -69,7 +68,6 @@
 			#{item.seq}
 			, #{item.date}
 			, #{item.ticker}
-			, #{item.weight}
 			, #{item.bestLength}
 			, #{item.bestPercent}
 			, #{item.averageByPlus}
@@ -81,7 +79,6 @@
     <select id="selectBuyTicker" parameterType="int">
 		select b_date as 'date'
 			, ticker
-			, weight
 			, best_length as 'bestLength'
 			, best_percent as 'bestPercent'
 			, average_by_plus as 'averageByPlus'
@@ -89,10 +86,16 @@
 		from buy_ticker
 		where seq = #{num}
 		order by b_date
+	</select>
+	
+    <select id="getLastSubSeq" parameterType="int">
+   		select max(subSeq)
+		from buy_result
+		where seq = #{num}
     </select>
     
     <insert id="insertBuyResult" parameterType="Map">
-		insert into buy_ticker 
+		insert into buy_result 
 		(
 			seq
 			, subSeq
