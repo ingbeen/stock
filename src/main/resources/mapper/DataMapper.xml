@@ -48,19 +48,20 @@
 
     <select id="getLastSeq" parameterType="String">
 		select max(seq)
-		from buy_ticker
+		from next_buy_ticker
     </select>
     
-    <insert id="insertBuyTicker" parameterType="List">
-		insert into buy_ticker 
+    <insert id="insertNextBuyTicker" parameterType="List">
+		insert into next_buy_ticker 
 		(
 			seq
-			, b_date
-			, ticker
-			, best_length
-			, best_percent
-			, average_by_plus
-			, average_by_minus
+			, bDate
+			, nextTicker
+			, endLength
+			, bestLength
+			, bestPercent
+			, averageByPlus
+			, averageByMinus
 		) 
 		values 
 		<foreach collection="list" item="item" separator=",">
@@ -68,6 +69,7 @@
 			#{item.seq}
 			, #{item.date}
 			, #{item.ticker}
+			, #{item.endLength}
 			, #{item.bestLength}
 			, #{item.bestPercent}
 			, #{item.averageByPlus}
@@ -76,16 +78,16 @@
 		</foreach>
     </insert>
 
-    <select id="selectBuyTicker" parameterType="int">
-		select b_date as 'date'
-			, ticker
-			, best_length as 'bestLength'
-			, best_percent as 'bestPercent'
-			, average_by_plus as 'averageByPlus'
-			, average_by_minus as 'averageByMinus'
-		from buy_ticker
+    <select id="selectNextBuyTicker" parameterType="int">
+		select bDate as 'date'
+			, nextTicker as 'ticker'
+			, bestLength
+			, bestPercent
+			, averageByPlus
+			, averageByMinus
+		from next_buy_ticker
 		where seq = #{num}
-		order by b_date
+		order by bDate
 	</select>
 	
     <select id="getLastSubSeq" parameterType="int">
@@ -94,43 +96,62 @@
 		where seq = #{num}
     </select>
     
-    <insert id="insertBuyResult" parameterType="Map">
-		insert into buy_result 
+    <insert id="insertNextBuyTickerResult" parameterType="List">
+		insert into next_buy_ticker_result 
 		(
 			seq
-			, subSeq
+			, bDate
 			, profitAndLoss
 			, oneMonthAgoProfitAndLoss
 			, twoMonthAgoProfitAndLoss
 			, threeMonthAgoProfitAndLoss
 			, sixMonthAgoProfitAndLoss
-			, oneYearAgoProfitAndLoss
 			, avgProfitAndLossByMonth
 			, avgProfitAndLossByYear
 			, avgSuccessPercent
 			, avgSuccessChange
 			, avgFailPercent
 			, avgFailChange
-			, jsonStr
 		) 
 		values 
+		<foreach collection="list" item="item" separator=",">
 		(
-			#{seq}
-			, #{subSeq}
-			, #{profitAndLoss}
-			, #{oneMonthAgoProfitAndLoss}
-			, #{twoMonthAgoProfitAndLoss}
-			, #{threeMonthAgoProfitAndLoss}
-			, #{sixMonthAgoProfitAndLoss}
-			, #{oneYearAgoProfitAndLoss}
-			, #{avgProfitAndLossByMonth}
-			, #{avgProfitAndLossByYear}
-			, #{avgSuccessPercent}
-			, #{avgSuccessChange}
-			, #{avgFailPercent}
-			, #{avgFailChange}
-			, #{jsonStr}
+			#{item.seq}
+			, #{item.date}
+			, #{item.profitAndLoss}
+			, #{item.oneMonthAgoProfitAndLoss}
+			, #{item.twoMonthAgoProfitAndLoss}
+			, #{item.threeMonthAgoProfitAndLoss}
+			, #{item.sixMonthAgoProfitAndLoss}
+			, #{item.avgProfitAndLossByMonth}
+			, #{item.avgProfitAndLossByYear}
+			, #{item.avgSuccessPercent}
+			, #{item.avgSuccessChange}
+			, #{item.avgFailPercent}
+			, #{item.avgFailChange}
 		)
+		</foreach>
     </insert>
+
+    <select id="selectNextBuyTickerResult">
+		select seq
+			, bdate as 'date'
+			, buyticker 'ticker'
+			, averagebyplus
+			, averagebyminus
+			, profitandloss
+			, onemonthagoprofitandloss
+			, twomonthagoprofitandloss
+			, threemonthagoprofitandloss
+			, sixmonthagoprofitandloss
+			, avgprofitandlossbymonth
+			, avgprofitandlossbyyear
+			, avgsuccesspercent
+			, avgfailpercent
+			, avgsuccesschange
+		from next_buy_ticker_result 
+		where oneMonthAgoProfitAndLoss > 0
+		order by bdate, seq
+	</select>
     
 </mapper>

@@ -13,40 +13,42 @@ CREATE TABLE `history` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_general_ci;
 
 
--- stock.buy_ticker definition
+-- stock.next_buy_ticker definition
 
-CREATE TABLE `buy_ticker` (
+CREATE TABLE `next_buy_ticker` (
   `seq` int(11) NOT NULL,
   `b_date` varchar(8) NOT NULL,
-  `ticker` varchar(10) NOT NULL,
+  `next_ticker` varchar(10) NOT NULL,
+  `end_length` int(11) NOT NULL,
   `best_length` int(11) NOT NULL,
   `best_percent` decimal(5,4) NOT NULL,
   `average_by_plus` decimal(5,4) NOT NULL,
   `average_by_minus` decimal(5,4) NOT NULL,
   `load_dttm` datetime DEFAULT current_timestamp(),
   PRIMARY KEY (`seq`,`b_date`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 
--- stock.buy_result definition
+-- stock.next_buy_ticker_result definition
 
-CREATE TABLE `buy_result` (
+CREATE TABLE `next_buy_ticker_result` (
   `seq` int(11) NOT NULL,
-  `subSeq` int(11) NOT NULL,
+  `b_date` varchar(8) CHARACTER SET utf8mb4 NOT NULL,
+  `buy_ticker` varchar(10) CHARACTER SET utf8mb4 NOT NULL,
+  `average_by_plus` decimal(5,4) NOT NULL,
+  `average_by_minus` decimal(5,4) NOT NULL,
   `profitAndLoss` int(11) NOT NULL,
   `oneMonthAgoProfitAndLoss` int(11) NOT NULL,
   `twoMonthAgoProfitAndLoss` int(11) NOT NULL,
   `threeMonthAgoProfitAndLoss` int(11) NOT NULL,
   `sixMonthAgoProfitAndLoss` int(11) NOT NULL,
-  `oneYearAgoProfitAndLoss` int(11) NOT NULL,
   `avgProfitAndLossByMonth` int(11) NOT NULL,
   `avgProfitAndLossByYear` int(11) NOT NULL,
   `avgSuccessPercent` decimal(5,4) NOT NULL,
-  `avgSuccessChange` decimal(5,4) NOT NULL,
   `avgFailPercent` decimal(5,4) NOT NULL,
+  `avgSuccessChange` decimal(5,4) NOT NULL,
   `avgFailChange` decimal(5,4) NOT NULL,
-  `jsonStr` longtext NOT NULL,
   `load_dttm` datetime DEFAULT current_timestamp(),
-  PRIMARY KEY (`seq`,`subSeq`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_general_ci;
+  PRIMARY KEY (`seq`,`b_date`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 

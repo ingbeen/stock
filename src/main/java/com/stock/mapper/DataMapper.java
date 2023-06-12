@@ -12,9 +12,10 @@ public interface DataMapper {
 	int insert(List<Map<String, Object>> tickerDataList);
 	List<Map<String, Object>> select(String ticker);
 	String getLastSeq();
-	int insertBuyTicker(List<Map<String, Object>> buyTickerList);
-	List<Map<String, Object>> selectBuyTicker(int seq);
+	int insertNextBuyTicker(List<Map<String, Object>> nextBuyTicker);
+	List<Map<String, Object>> selectNextBuyTicker(int seq);
 	String getLastSubSeq(int subSeq);
-	int insertBuyResult(Map<String, Object> buyResultData);
+	int insertNextBuyTickerResult(List<Map<String, Object>> buyResultData);
+	List<Map<String, Object>> selectNextBuyTickerResult();
 
 }

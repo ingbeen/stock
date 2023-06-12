@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -44,13 +45,13 @@ public class DataController {
 					tickerData.put("ticker", ticker);
 					tempTickerDataList.add(tickerData);
 					if (tempTickerDataList.size() % limit == 0) {
-						insertCnt = insertCnt + dataMapper.insert(tempTickerDataList);
+						insertCnt += dataMapper.insert(tempTickerDataList);
 						tempTickerDataList.clear();
 					}
 				}
 				
 				if (tempTickerDataList.size() > 0) {
-					insertCnt = insertCnt + dataMapper.insert(tempTickerDataList);
+					insertCnt += dataMapper.insert(tempTickerDataList);
 				}
 				
 				result.put(ticker, insertCnt);
@@ -92,29 +93,28 @@ public class DataController {
 	}
 	
 	@ResponseBody
-	@PostMapping("/insert/buyTicker")
-	public Map<String, Object> insertBuyTicker(@RequestBody Map<String, Object> param) {
+	@PostMapping("/insert/nextBuyTicker")
+	public Map<String, Object> insertNextBuyTicker(@RequestBody Map<String, Object> param) {
 		Map<String, Object> result = new HashMap<>();
 		
 		try {
-			List<Map<String, Object>> buyTickerList = JsonUtil.getListMap((String) param.get("buyTickerList"));
+			List<Map<String, Object>> nextBuyTickerList = JsonUtil.getListMap((String) param.get("nextBuyTickerList"));
 			int seq = Integer.parseInt(StringUtil.nvl(dataMapper.getLastSeq(), "0")) + 1;
 			int insertCnt = 0;
 			
-			List<Map<String, Object>> tempBuyTickerList = new ArrayList<>();
+			List<Map<String, Object>> tempNextBuyTickerList = new ArrayList<>();
 			int limit = 1000;
-			for (Map<String, Object> buyTickerData : buyTickerList) {
-				
-				buyTickerData.put("seq", seq);
-				tempBuyTickerList.add(buyTickerData);
-				if (tempBuyTickerList.size() % limit == 0) {
-					insertCnt = insertCnt + dataMapper.insertBuyTicker(tempBuyTickerList);
-					tempBuyTickerList.clear();
+			for (Map<String, Object> nextBuyTickerata : nextBuyTickerList) {
+				nextBuyTickerata.put("seq", seq);
+				tempNextBuyTickerList.add(nextBuyTickerata);
+				if (tempNextBuyTickerList.size() % limit == 0) {
+					insertCnt += dataMapper.insertNextBuyTicker(tempNextBuyTickerList);
+					tempNextBuyTickerList.clear();
 				}
 			}
 			
-			if (tempBuyTickerList.size() > 0) {
-				insertCnt = insertCnt + dataMapper.insertBuyTicker(tempBuyTickerList);
+			if (tempNextBuyTickerList.size() > 0) {
+				insertCnt += dataMapper.insertNextBuyTicker(tempNextBuyTickerList);
 			}
 
 			result.put("seq", seq);
@@ -129,15 +129,15 @@ public class DataController {
 	}
 	
 	@ResponseBody
-	@PostMapping("/select/buyTicker")
-	public Map<String, Object> selectBuyTicker(@RequestBody Map<String, Object> param) {
+	@PostMapping("/select/nextBuyTicker")
+	public Map<String, Object> selectNextBuyTicker(@RequestBody Map<String, Object> param) {
 		Map<String, Object> result = new HashMap<>();
 		
 		try {
 			int seq = (int) param.get("seq");
-			List<Map<String, Object>> buyTickerList = dataMapper.selectBuyTicker(seq);
+			List<Map<String, Object>> nextBuyTickerList = dataMapper.selectNextBuyTicker(seq);
 
-			result.put("buyTickerList", buyTickerList);
+			result.put("nextBuyTickerList", nextBuyTickerList);
 			result.put("success", true);
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -148,21 +148,28 @@ public class DataController {
 	}
 	
 	@ResponseBody
-	@PostMapping("/insert/buyResult")
-	public Map<String, Object> insertBuyResult(@RequestBody Map<String, Object> param) {
+	@PostMapping("/insert/nextBuyTickerResult")
+	public Map<String, Object> insertNextBuyTickerResult(@RequestBody Map<String, Object> param) {
 		Map<String, Object> result = new HashMap<>();
 		
 		try {
-			Map<String, Object> buyResultData = (Map<String, Object>) param.get("buyResultData");
-			int seq = (int) param.get("seq");
-			int subSeq = Integer.parseInt(StringUtil.nvl(dataMapper.getLastSubSeq(seq), "0")) + 1;
+			List<Map<String, Object>> nextBuyTickerResultList = JsonUtil.getListMap((String) param.get("nextBuyTickerResultList"));
 			int insertCnt = 0;
+
+			List<Map<String, Object>> tempNextBuyTickerResultList = new ArrayList<>();
+			int limit = 1000;
+			for (Map<String, Object> nextBuyTickerResultData : nextBuyTickerResultList) {
+				tempNextBuyTickerResultList.add(nextBuyTickerResultData);
+				if (tempNextBuyTickerResultList.size() % limit == 0) {
+					insertCnt += dataMapper.insertNextBuyTickerResult(tempNextBuyTickerResultList);
+					tempNextBuyTickerResultList.clear();
+				}
+			}
 			
-			buyResultData.put("subSeq", subSeq);
-			insertCnt = dataMapper.insertBuyResult(buyResultData);
+			if (tempNextBuyTickerResultList.size() > 0) {
+				insertCnt += dataMapper.insertNextBuyTickerResult(tempNextBuyTickerResultList);
+			}
 			
-			result.put("seq", seq);
-			result.put("subSeq", subSeq);
 			result.put("insertCnt", insertCnt);
 			result.put("success", true);
 		} catch (Exception e) {
@@ -172,4 +179,23 @@ public class DataController {
 		
 		return result;
 	}
+	
+	@ResponseBody
+	@GetMapping("/select/nextBuyTickerResult")
+	public Map<String, Object> selectNextBuyTickerResult() {
+		Map<String, Object> result = new HashMap<>();
+		
+		try {
+			List<Map<String, Object>> nextBuyTickerResultList = dataMapper.selectNextBuyTickerResult();
+
+			result.put("nextBuyTickerResultList", nextBuyTickerResultList);
+			result.put("success", true);
+		} catch (Exception e) {
+			e.printStackTrace();
+			result.put("success", false);
+		}
+		
+		return result;
+	}
+	
 }
