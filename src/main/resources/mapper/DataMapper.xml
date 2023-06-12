@@ -134,24 +134,28 @@
     </insert>
 
     <select id="selectNextBuyTickerResult">
-		select seq
-			, bdate as 'date'
-			, buyticker 'ticker'
-			, averagebyplus
-			, averagebyminus
-			, profitandloss
-			, onemonthagoprofitandloss
-			, twomonthagoprofitandloss
-			, threemonthagoprofitandloss
-			, sixmonthagoprofitandloss
-			, avgprofitandlossbymonth
-			, avgprofitandlossbyyear
-			, avgsuccesspercent
-			, avgfailpercent
-			, avgsuccesschange
-		from next_buy_ticker_result 
-		where oneMonthAgoProfitAndLoss > 0
-		order by bdate, seq
+		select a.seq
+			, a.bDate as 'date'
+			, b.nextTicker as 'ticker'
+			, b.averageByPlus
+			, b.averageByMinus
+			, a.profitandloss
+			, a.oneMonthAgoProfitAndLoss
+			, a.twoMonthAgoProfitAndLoss
+			, a.threeMonthAgoProfitAndLoss
+			, a.sixMonthAgoProfitAndLoss
+			, a.avgProfitAndLossByMonth
+			, a.avgProfitAndLossByYear
+			, a.avgSuccessPercent
+			, a.avgFailPercent
+			, a.avgSuccessChange
+			, a.avgFailChange
+		from next_buy_ticker_result a
+		inner join next_buy_ticker b
+		on a.seq = b.seq
+		and a.bDate = b.bDate
+		where 1=1
+		order by a.bDate, a.seq
 	</select>
     
 </mapper>

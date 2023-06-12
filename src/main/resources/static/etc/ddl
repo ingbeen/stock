@@ -26,14 +26,14 @@ CREATE TABLE `next_buy_ticker` (
   `averageByMinus` decimal(5,4) NOT NULL,
   `load_dttm` datetime DEFAULT current_timestamp(),
   PRIMARY KEY (`seq`,`bDate`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 
 -- stock.next_buy_ticker_result definition
 
 CREATE TABLE `next_buy_ticker_result` (
   `seq` int(11) NOT NULL,
-  `bDate` varchar(8) CHARACTER SET utf8mb4 NOT NULL,
+  `bDate` varchar(8) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
   `profitAndLoss` int(11) NOT NULL,
   `oneMonthAgoProfitAndLoss` int(11) NOT NULL,
   `twoMonthAgoProfitAndLoss` int(11) NOT NULL,
@@ -47,5 +47,5 @@ CREATE TABLE `next_buy_ticker_result` (
   `avgFailChange` decimal(5,4) NOT NULL,
   `load_dttm` datetime DEFAULT current_timestamp(),
   PRIMARY KEY (`seq`,`bDate`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_general_ci;
 
