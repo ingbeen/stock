@@ -1,4 +1,17 @@
-(function() {
+$.ajax({
+	type: "get",
+	url: "/js/app.js",
+	dataType : "text"
+})
+.done(function(script) {
+	debugger
+	init(script)
+})
+.fail(function() {
+	console.log("스크립트 로드 실패")
+})
+
+function init(script) {
 	bind();
 //	$("#upload").trigger("click");
 //	$("#expectedTicker").trigger("click");
@@ -7,7 +20,6 @@
 //	$("#simulation").trigger("click");
 	
 	function bind() {
-		
 		$("#simulation").on("click", function(e, param) {
 			var config = {
 				longTicker: "tqqq",
@@ -55,6 +67,7 @@
 						maxProfitAndLoss = sumProfitAndLoss;
 						config.nextBuyTickerDataObj[cur.date] = {
 							ticker: cur.ticker,
+							weight: cur.weight,
 							averageByPlus: cur.averageByPlus,
 							averageByMinus: cur.averageByMinus,
 						}
@@ -107,7 +120,7 @@
 			// loop가 아닐경우 위 config와 다른점을 명시한다
 			if (!isEmptyObj(param) && param.isLoop === false) {
 				config.isLoop = false;
-				config.seq = 6;
+				config.seq = 1;
 			}
 			
 			$("#buyResult_loop_sub").trigger("click", config);
@@ -236,7 +249,7 @@
 					// loop가 아닐경우 위 config와 다른점을 명시한다
 					if (!isEmptyObj(param) && param.isLoop === false) {
 						config.isLoop = false;
-						config.endLength = 60;
+						config.endLength = 250;
 					}
 					
 					initAverageChange();
@@ -372,6 +385,7 @@
 				var nextBuyTickerData = {};
 				nextBuyTickerData.date = config.lastDate; 
 				nextBuyTickerData.ticker = config.buyTicker;
+				nextBuyTickerData.weight = config.buyWeight;
 				nextBuyTickerData.endLength = config.endLength;
 				nextBuyTickerData.bestLength = config.bestLength;
 				nextBuyTickerData.bestPercent = config.bestPercent;
@@ -428,10 +442,12 @@
 				
 				config.bestPercent = bestPercent;
 				config.bestLength = bestLength;
+				
 				if (bestLength === 0) {
 					config.buyTicker = "";
 				} else {
 					config.buyTicker = expectedTickerConfig.nextBuyTickerMomentumDataObj[bestLength][config.lastDate].buyTicker;
+					config.buyWeight = expectedTickerConfig.nextBuyTickerMomentumDataObj[bestLength][config.lastDate].buyWeight;
 //					config.buyTicker = config.longDataList[config.longDataList.length - 1].ticker;
 				}
 			}
@@ -473,31 +489,29 @@
 					};
 					lastChangeList.shift();
 					
-					var weight = maxLength;
-					var lastChangeListIdx = maxLength - 1;
-					var sumMomentum = 0;
-					while(lastChangeListIdx >= 0) {
-						var change = lastChangeList[lastChangeListIdx];
+					var plusCnt = 0;
+					lastChangeList.forEach(function(change) {
 						if (change > 0) {
-							sumMomentum += 1 * weight;
-						} else if (change < 0) {
-							sumMomentum -= 1 * weight;
+							plusCnt += 1;
 						}
-						weight--;
-						lastChangeListIdx--;
-					}
+					})
 					
 					var buyTicker = "";
-					if (sumMomentum > 0) {
+					var buyWeight = "";
+					var momentum = plusCnt / lastChangeList.length;
+					if (momentum > 0.5) {
 						buyTicker = config.longTicker;
-					} else if (sumMomentum < 0) {
+						buyWeight = round4(momentum);
+					} else {
 						buyTicker = config.shortTicker;
+						buyWeight = Math.abs(round4(momentum - 1));
 					}
 					
 					// {20160505 : tqqq}
 					// 설명 : 20160505의 다음 거래일날 tqqq 매수
 					nextBuyTickerMomentumData[row.date] = {
-						buyTicker: buyTicker
+						buyTicker: buyTicker,
+						buyWeight: buyWeight,
 					};
 					
 					idx++;
@@ -748,7 +762,7 @@
 			}
 		})
 	}
-})();
+};
 
 
 			
@@ -762,8 +776,9 @@ function initNextBuyTickerResult(config) {
 	var resultDataList = [];
 	var todayBuyTickerData = {};
 	var myStock = {
-		betMoney: 15000,
-		defaultBetMoney: 15000,
+		money: 0,
+		betMoney: 30000,
+		defaultBetMoney: 20000,
 		maxBetMoney: 30000,
 		positionTicker: "",
 		charge: 0.001,
@@ -853,24 +868,22 @@ function initNextBuyTickerResult(config) {
 					profitAndLoss: 0
 				})
 				lastIdxByYearList++;
-				myStock.betMoney = myStock.defaultBetMoney;
+//				myStock.betMoney = myStock.defaultBetMoney;
 			}
 			
-			if (myStock.defaultBetMoney > myStock.betMoney) {
-				myStock.betMoney = myStock.defaultBetMoney;
-			} else if (myStock.maxBetMoney < myStock.betMoney) {
-				myStock.betMoney = myStock.maxBetMoney; 
-			}
+//			if (myStock.defaultBetMoney > myStock.betMoney) {
+//				myStock.betMoney = myStock.defaultBetMoney;
+//			} else if (myStock.maxBetMoney < myStock.betMoney) {
+//				myStock.betMoney = myStock.maxBetMoney; 
+//			}
 //			myStock.betMoney = round2((myStock.defaultBetMoney + myStock.profitAndLoss) * 0.8);
-			
+			var betMoney = round2(myStock.betMoney * todayBuyTickerData.weight);
 			if (myStock.positionTicker !== todayBuyTickerData.ticker) {
 				charge = round2(myStock.betMoney * myStock.charge);
 			}
 			myStock.positionTicker = todayBuyTickerData.ticker;
 			
-			var curProfitAndLoss = round2(myStock.betMoney * curChange - charge);
-			var afterBetMoney = myStock.betMoney;
-			myStock.betMoney = round2(myStock.betMoney + curProfitAndLoss);
+			var curProfitAndLoss = round2(betMoney * curChange - charge);
 			myStock.profitAndLoss = round2(myStock.profitAndLoss + curProfitAndLoss);
 			myStock.profitAndLossList.push(curProfitAndLoss);
 			profitAndLossListByMonth[lastIdxByMonthList].profitAndLoss = round2(profitAndLossListByMonth[lastIdxByMonthList].profitAndLoss + curProfitAndLoss);
@@ -882,27 +895,34 @@ function initNextBuyTickerResult(config) {
 				
 			var result = {
 				buyTicker: todayBuyTickerData.ticker,
+				buyWeight: todayBuyTickerData.weight,
 				successFlag: successFlag,
 				change: curChange,
-				betMoney: afterBetMoney,
+				betMoney: betMoney,
 			}
 			result[longTicker] = longRow;
 			result[shortTicker] = shoutRow;
 			resultDataList.push(result);
 			
-			if (resultDataList.length >= 250) {
-				var sumProfitAndLossByMonth = 0;
+			if (resultDataList.length >= 120) {
+				var tempProfitAndLossListByMonth = [];
 				myStock.profitAndLossListByMonth.slice(1, -1).forEach(function(cur) {
-					sumProfitAndLossByMonth = round2(sumProfitAndLossByMonth + cur.profitAndLoss);
+					tempProfitAndLossListByMonth.push(cur.profitAndLoss);
 				})
+				if (tempProfitAndLossListByMonth.length === 0) {
+					tempProfitAndLossListByMonth[0] = 0;
+				}
 				
-				var sumProfitAndLossByYear = 0;
+				var tempProfitAndLossListByYear = [];
 				myStock.profitAndLossListByYear.slice(1, -1).forEach(function(cur) {
-					sumProfitAndLossByYear = round2(sumProfitAndLossByYear + cur.profitAndLoss);
+					tempProfitAndLossListByYear.push(cur.profitAndLoss);
 				})
+				if (tempProfitAndLossListByYear.length === 0) {
+					tempProfitAndLossListByYear[0] = 0;
+				}
 				
-				var avgProfitAndLossByMonth = round2(sumProfitAndLossByMonth / myStock.profitAndLossListByMonth.length);
-				var avgProfitAndLossByYear = round2(sumProfitAndLossByYear / myStock.profitAndLossListByYear.length);
+				var avgProfitAndLossByMonth = d3.median(tempProfitAndLossListByMonth);
+				var avgProfitAndLossByYear = d3.median(tempProfitAndLossListByYear);
 				
 				var successCnt = 0;
 				var failCnt = 0;
@@ -950,11 +970,13 @@ function initNextBuyTickerResult(config) {
 		}
 		
 		todayBuyTickerData = nextBuyTickerDataObj[date];
+		todayBuyTickerData.date = date;
 		todayBuyTickerData.buyFlag = true;
 		idx++;
 	}
 	
 	if (config.isSimulation === true) {
+		console.log(resultDataList);
 		console.log(nextBuyTickerDataObj);
 		console.log(todayBuyTickerData);
 		console.log(myStock);

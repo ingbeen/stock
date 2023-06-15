@@ -57,6 +57,7 @@
 			seq
 			, bDate
 			, nextTicker
+			, nextWeight
 			, endLength
 			, bestLength
 			, bestPercent
@@ -69,6 +70,7 @@
 			#{item.seq}
 			, #{item.date}
 			, #{item.ticker}
+			, #{item.weight}
 			, #{item.endLength}
 			, #{item.bestLength}
 			, #{item.bestPercent}
@@ -81,6 +83,7 @@
     <select id="selectNextBuyTicker" parameterType="int">
 		select bDate as 'date'
 			, nextTicker as 'ticker'
+			, nextWeight as 'weight'
 			, bestLength
 			, bestPercent
 			, averageByPlus
@@ -137,6 +140,7 @@
 		select a.seq
 			, a.bDate as 'date'
 			, b.nextTicker as 'ticker'
+			, b.nextWeight as 'weight'
 			, b.averageByPlus
 			, b.averageByMinus
 			, a.profitandloss
@@ -155,6 +159,7 @@
 		on a.seq = b.seq
 		and a.bDate = b.bDate
 		where 1=1
+<!-- 		and a.seq = 1 -->
 		order by a.bDate, a.seq
 	</select>
     
