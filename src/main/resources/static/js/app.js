@@ -4,7 +4,6 @@ $.ajax({
 	dataType : "text"
 })
 .done(function(script) {
-	debugger
 	init(script)
 })
 .fail(function() {
@@ -14,7 +13,7 @@ $.ajax({
 function init(script) {
 	bind();
 //	$("#upload").trigger("click");
-//	$("#expectedTicker").trigger("click");
+	$("#expectedTicker").trigger("click");
 //	$("#expectedTicker_loop").trigger("click");
 //	$("#buyResult_loop").trigger("click");
 //	$("#simulation").trigger("click");
@@ -123,6 +122,10 @@ function init(script) {
 				config.seq = 1;
 			}
 			
+			if (Number.isInteger(param.seq)) {
+				config.seq = param.seq;
+			}
+			
 			$("#buyResult_loop_sub").trigger("click", config);
 		})
 		
@@ -164,6 +167,7 @@ function init(script) {
 					if (config.isLoop === false) {
 						if (resp.success === true) {
 							console.log("매수결과 데이터 업로드 성공 (insertCnt : " + resp.insertCnt + ")");
+							insertScript(config.seq, script);
 						} else {
 							alert("매수결과 데이터 업로드 실패");
 						}
@@ -249,7 +253,7 @@ function init(script) {
 					// loop가 아닐경우 위 config와 다른점을 명시한다
 					if (!isEmptyObj(param) && param.isLoop === false) {
 						config.isLoop = false;
-						config.endLength = 250;
+						config.endLength = 80;
 					}
 					
 					initAverageChange();
@@ -353,6 +357,7 @@ function init(script) {
 					if (config.isLoop === false) {
 						if (resp.success === true) {
 							console.log("예상종목 데이터 업로드 성공 (seq : " + resp.seq + " / insertCnt : " + resp.insertCnt + ")");
+							$("#buyResult_loop").trigger("click", {seq: resp.seq, isLoop: false});
 						} else {
 							alert("예상종목 데이터 업로드 실패");
 						}
@@ -975,13 +980,13 @@ function initNextBuyTickerResult(config) {
 		idx++;
 	}
 	
-	if (config.isSimulation === true) {
+//	if (config.isSimulation === true) {
 		console.log(resultDataList);
 		console.log(nextBuyTickerDataObj);
 		console.log(todayBuyTickerData);
 		console.log(myStock);
 		console.log(config.nextBuyTickerResultList[config.nextBuyTickerResultList.length - 1]);
-	}
+//	}
 }
 
 
@@ -1006,6 +1011,30 @@ function getTickerData(config) {
 		.fail(function() {
 			reject();
 		})
+	})
+}
+
+
+function insertScript(seq, script) {
+	$.ajax({
+		type: "post",
+		url: "/data/insert/script",
+		data: JSON.stringify({
+			seq: seq,
+			script: script,
+		}),
+		contentType: 'application/json; charset=utf-8',
+		dataType : "json"
+	})
+	.done(function(resp) {
+		if (resp.success === true) {
+			console.log("스크립트 저장 성공");
+		} else {
+			console.log("스크립트 저장 실패");
+		}
+	})
+	.fail(function() {
+		console.log("스크립트 저장 실패");
 	})
 }
 

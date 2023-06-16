@@ -163,4 +163,17 @@
 		order by a.bDate, a.seq
 	</select>
     
+    <insert id="insertScript" parameterType="Map">
+		insert into script 
+		(
+			seq
+			, script
+		)
+		values 
+		(
+			#{seq}
+			, #{script}
+		)
+    </insert>
+    
 </mapper>

@@ -198,4 +198,21 @@ public class DataController {
 		return result;
 	}
 	
+	@ResponseBody
+	@PostMapping("/insert/script")
+	public Map<String, Object> insertScript(@RequestBody Map<String, Object> param) {
+		Map<String, Object> result = new HashMap<>();
+		
+		try {
+			dataMapper.insertScript(param);
+			
+			result.put("success", true);
+		} catch (Exception e) {
+			e.printStackTrace();
+			result.put("success", false);
+		}
+		
+		return result;
+	}
+	
 }
