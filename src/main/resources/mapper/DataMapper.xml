@@ -58,6 +58,7 @@
 			, bDate
 			, nextTicker
 			, nextWeight
+			, startLength
 			, endLength
 			, bestLength
 			, bestPercent
@@ -71,6 +72,7 @@
 			, #{item.date}
 			, #{item.ticker}
 			, #{item.weight}
+			, #{item.startLength}
 			, #{item.endLength}
 			, #{item.bestLength}
 			, #{item.bestPercent}
@@ -136,7 +138,7 @@
 		</foreach>
     </insert>
 
-    <select id="selectNextBuyTickerResult">
+    <select id="selectNextBuyTickerResult" parameterType="List">
 		select a.seq
 			, a.bDate as 'date'
 			, b.nextTicker as 'ticker'
@@ -159,21 +161,61 @@
 		on a.seq = b.seq
 		and a.bDate = b.bDate
 		where 1=1
-<!-- 		and a.seq = 1 -->
+		and a.seq in 
+			(
+		<foreach collection="list" item="item" separator=",">
+			#{item}
+		</foreach>
+			)
 		order by a.bDate, a.seq
 	</select>
     
     <insert id="insertScript" parameterType="Map">
 		insert into script 
 		(
-			seq
-			, script
+			script
 		)
 		values 
 		(
-			#{seq}
-			, #{script}
+			#{script}
 		)
+    </insert>
+    
+    <insert id="insertSimulationResult" parameterType="List">
+		insert into simulation_result 
+		(
+			seq
+			, bDate
+			, profitAndLoss
+			, oneMonthAgoProfitAndLoss
+			, twoMonthAgoProfitAndLoss
+			, threeMonthAgoProfitAndLoss
+			, sixMonthAgoProfitAndLoss
+			, avgProfitAndLossByMonth
+			, avgProfitAndLossByYear
+			, avgSuccessPercent
+			, avgSuccessChange
+			, avgFailPercent
+			, avgFailChange
+		) 
+		values 
+		<foreach collection="list" item="item" separator=",">
+		(
+			#{item.seq}
+			, #{item.date}
+			, #{item.profitAndLoss}
+			, #{item.oneMonthAgoProfitAndLoss}
+			, #{item.twoMonthAgoProfitAndLoss}
+			, #{item.threeMonthAgoProfitAndLoss}
+			, #{item.sixMonthAgoProfitAndLoss}
+			, #{item.avgProfitAndLossByMonth}
+			, #{item.avgProfitAndLossByYear}
+			, #{item.avgSuccessPercent}
+			, #{item.avgSuccessChange}
+			, #{item.avgFailPercent}
+			, #{item.avgFailChange}
+		)
+		</foreach>
     </insert>
     
 </mapper>

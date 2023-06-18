@@ -4,18 +4,39 @@ $.ajax({
 	dataType : "text"
 })
 .done(function(script) {
-	init(script)
+	insertScript(script);
 })
 .fail(function() {
-	console.log("스크립트 로드 실패")
+	console.log("스크립트 로드 실패");
 })
 
-function init(script) {
+function insertScript(script) {
+	$.ajax({
+		type: "post",
+		url: "/data/insert/script",
+		data: JSON.stringify({
+			script: script,
+		}),
+		contentType: 'application/json; charset=utf-8',
+		dataType : "json"
+	})
+	.done(function(resp) {
+		if (resp.success === true) {
+			console.log("스크립트 저장 성공");
+			init();
+		} else {
+			console.log("스크립트 저장 실패");
+		}
+	})
+	.fail(function() {
+		console.log("스크립트 저장 실패");
+	})
+}
+
+function init() {
 	bind();
 //	$("#upload").trigger("click");
-	$("#expectedTicker").trigger("click");
-//	$("#expectedTicker_loop").trigger("click");
-//	$("#buyResult_loop").trigger("click");
+//	$("#expectedTicker").trigger("click");
 //	$("#simulation").trigger("click");
 	
 	function bind() {
@@ -44,6 +65,7 @@ function init(script) {
 					config.shortDataList = tickerData[config.shortTicker];
 					config.isSimulation = true;
 					initNextBuyTickerResult(config);
+					insertSimulationResultList();
 				})
 				.catch(function(e) {
 					if (e !== undefined) console.log(e.stack);
@@ -75,10 +97,19 @@ function init(script) {
 			}
 			
 			function getNextBuyTickerResultList() {
+				var seqList = [];
+				seqList.push(Number.parseInt($("#seq1").val()));
+				seqList.push(Number.parseInt($("#seq2").val()));
+				config.seq = seqList.join();
+				
 				return new Promise(function(resolve, reject) {
 					$.ajax({
-						type: "get",
+						type: "post",
 						url: "/data/select/nextBuyTickerResult",
+						data: JSON.stringify({
+							seqList: JSON.stringify(seqList)
+						}),
+						contentType: 'application/json; charset=utf-8',
 						dataType : "json"
 					})
 					.done(function(resp) {
@@ -93,15 +124,42 @@ function init(script) {
 					})
 				})
 			}
+	        
+	        function insertSimulationResultList() {
+				$.ajax({
+					type: "post",
+					url: "/data/insert/simulationResult",
+					data: JSON.stringify({
+						simulationResultList: JSON.stringify(config.nextBuyTickerResultList)
+					}),
+					contentType: 'application/json; charset=utf-8',
+					dataType : "json"
+				})
+				.done(function(resp) {
+					if (resp.success === true) {
+						console.log("시뮬레이션 데이터 업로드 성공 (insertCnt : " + resp.insertCnt + ")");
+						var newSeq2 = Number.parseInt($("#seq2").val()) + 1;
+						
+						if (newSeq2 > 1226) {
+							var newSeq1 = Number.parseInt($("#seq1").val()) + 1;
+							if (newSeq1 > 1225) return;
+							
+							$("#seq1").val(newSeq1);
+							$("#seq2").val(newSeq1 + 1);
+							$("#simulation").trigger("click");
+							return;
+						} else {
+							$("#seq2").val(newSeq2);
+							$("#simulation").trigger("click");
+						}
+					} else {
+						alert("시뮬레이션 데이터 업로드 실패");
+					}
+				})
+			}
 		})
 		
-		var buyResultConfig = {
-			originConfigStr: "",
-			loopCnt: 1,
-			loopEndSeq: 246,
-		}
-		
-		$("#buyResult_loop").on("click", function(e, param) {
+		$("#buyResult").on("click", function(e, param) {
 			var config = {
 				longTicker: "tqqq",
 				shortTicker: "sqqq",
@@ -114,25 +172,8 @@ function init(script) {
 				seq: 1,
 			}
 			
-			buyResultConfig.originConfigStr = JSON.stringify(config);
-					
-			// loop가 아닐경우 위 config와 다른점을 명시한다
-			if (!isEmptyObj(param) && param.isLoop === false) {
-				config.isLoop = false;
-				config.seq = 1;
-			}
-			
-			if (Number.isInteger(param.seq)) {
+			if (!isEmptyObj(param) && Number.isInteger(param.seq)) {
 				config.seq = param.seq;
-			}
-			
-			$("#buyResult_loop_sub").trigger("click", config);
-		})
-		
-		$("#buyResult_loop_sub").on("click", function(e, config) {
-			if (isEmptyObj(config)) {
-				$("#buyResult_loop").trigger("click", {isLoop: false});
-				return;
 			}
 			
 			getNextBuyTickerList()
@@ -164,25 +205,24 @@ function init(script) {
 					dataType : "json"
 				})
 				.done(function(resp) {
-					if (config.isLoop === false) {
-						if (resp.success === true) {
-							console.log("매수결과 데이터 업로드 성공 (insertCnt : " + resp.insertCnt + ")");
-							insertScript(config.seq, script);
+					if (resp.success === true) {
+						console.log("매수결과 데이터 업로드 성공 (startLength : " + $("#startLength").val() + " / endLength : " + $("#endLength").val() + " / seq : " + config.seq + " / insertCnt : " + resp.insertCnt + ")");
+						var newEndLength = Number.parseInt($("#endLength").val()) + 5;
+						
+						if (newEndLength > 250) {
+							var newStartLength = Number.parseInt($("#startLength").val()) + 5;
+							if (newStartLength > 245) return;
+							
+							$("#startLength").val(newStartLength);
+							$("#endLength").val(newStartLength + 5);
+							$("#expectedTicker").trigger("click");
+							return;
 						} else {
-							alert("매수결과 데이터 업로드 실패");
+							$("#endLength").val(newEndLength);
+							$("#expectedTicker").trigger("click");
 						}
 					} else {
-						var originConfig = JSON.parse(buyResultConfig.originConfigStr);
-						originConfig.seq = config.seq;
-						originConfig.seq++;
-
-						console.log("loopCnt : " + buyResultConfig.loopCnt + ", " + config.seq + "/" + buyResultConfig.loopEndSeq);
-						if (buyResultConfig.loopEndSeq < originConfig.seq) {
-							console.log("매수결과 데이터 업로드 성공 (loopCnt : " + buyResultConfig.loopCnt + ")");
-						} else {
-							buyResultConfig.loopCnt++;
-							$("#buyResult_loop_sub").trigger("click", originConfig);
-						}
+						alert("매수결과 데이터 업로드 실패");
 					}
 				})
 			}
@@ -221,43 +261,26 @@ function init(script) {
 			}
 		})
 		
-		
-		var expectedTickerConfig = {
-			tickerData: {},
-			originConfigStr: "",
-			loopCnt: 1,
-			loopEndLength: 250,
-			nextBuyTickerMomentumDataObj: {},
-			nextBuyTickerMomentumResultListObj: {},
-			averageDataObj: {},
-		}
-		
-		$("#expectedTicker_loop").on("click", function(e, param) {
+		$("#expectedTicker").on("click", function(e, config) {
 			var config = {
 				longTicker: "tqqq",
 				shortTicker: "sqqq",
 				tickerData: {},
-				startLength: 5,
-				endLength: 5,
+				startLength: Number.parseInt($("#startLength").val()),
+				endLength: Number.parseInt($("#endLength").val()),
 				overYear: 2,
 				dateInfo: {},
 				nextBuyTickerList: [],
+				nextBuyTickerMomentumDataObj: {},
+				nextBuyTickerMomentumResultListObj: {},
+				averageDataObj: {},
 			}
-			
-			expectedTickerConfig.originConfigStr = JSON.stringify(config);
 			
 			getTickerData(config)
 				.then(function(tickerData) {
-					expectedTickerConfig.tickerData = tickerData;
-					
-					// loop가 아닐경우 위 config와 다른점을 명시한다
-					if (!isEmptyObj(param) && param.isLoop === false) {
-						config.isLoop = false;
-						config.endLength = 80;
-					}
-					
+					config.tickerData = tickerData;
 					initAverageChange();
-					$("#expectedTicker").trigger("click", config);
+					expectedTicker();
 				})
 				.catch(function(e) {
 					if (e !== undefined) console.log(e.stack);
@@ -265,8 +288,8 @@ function init(script) {
 				})
 			
 			function initAverageChange() {
-				var longDataList = expectedTickerConfig.tickerData[config.longTicker];
-				var averageDataObj = expectedTickerConfig.averageDataObj;
+				var longDataList = config.tickerData[config.longTicker];
+				var averageDataObj = config.averageDataObj;
 				var overYear = moment(longDataList[0].date, "YYYYMMDD").add(config.overYear, 'year').format("YYYYMMDD");
 				var plusList = [];
 				var minusList = [];
@@ -307,295 +330,273 @@ function init(script) {
 					idx++;
 				}
 			}
-		})
-		
-		$("#expectedTicker").on("click", function(e, config) {
-			if (isEmptyObj(config)) {
-				$("#expectedTicker_loop").trigger("click", {isLoop: false});
-				return;
-			}
 			
-			config.tickerData = expectedTickerConfig.tickerData;
 			
-			var tickerData = config.tickerData;
-			var longDataList = tickerData[config.longTicker];
-			var shortDataList = tickerData[config.shortTicker];
-			var tempLongDataList = [];
-			var tempShortDataList = [];
-			
-			var overYear = moment(longDataList[0].date, "YYYYMMDD").add(config.overYear, 'year').format("YYYYMMDD");
-			var idx = 0;
-			while(idx < longDataList.length) {
-				tempLongDataList.push(longDataList[idx]);
-				tempShortDataList.push(shortDataList[idx]);
+			function expectedTicker() {
+				config.tickerData = config.tickerData;
 				
-				if (longDataList[idx].date < overYear) {
+				var tickerData = config.tickerData;
+				var longDataList = tickerData[config.longTicker];
+				var shortDataList = tickerData[config.shortTicker];
+				var tempLongDataList = [];
+				var tempShortDataList = [];
+				
+				var overYear = moment(longDataList[0].date, "YYYYMMDD").add(config.overYear, 'year').format("YYYYMMDD");
+				var idx = 0;
+				while(idx < longDataList.length) {
+					tempLongDataList.push(longDataList[idx]);
+					tempShortDataList.push(shortDataList[idx]);
+					
+					if (longDataList[idx].date < overYear) {
+						idx++;
+						continue;
+					}
+					
+					config.idxMsg = "[" + (idx + 1) + "/" + longDataList.length + "]" + " / ";
+					config.longDataList = tempLongDataList;
+					config.shortDataList = tempShortDataList;
+					runHandler();
 					idx++;
-					continue;
 				}
 				
-				config.idxMsg = "[" + (idx + 1) + "/" + longDataList.length + "]" + " / ";
-				config.longDataList = tempLongDataList;
-				config.shortDataList = tempShortDataList;
-				runHandler();
-				idx++;
-			}
-			
-			insertNextBuyTickerList();
-	        
-	        function insertNextBuyTickerList() {
-				$.ajax({
-					type: "post",
-					url: "/data/insert/nextBuyTicker",
-					data: JSON.stringify({
-						nextBuyTickerList: JSON.stringify(config.nextBuyTickerList)
-					}),
-					contentType: 'application/json; charset=utf-8',
-					dataType : "json"
-				})
-				.done(function(resp) {
-					if (config.isLoop === false) {
+				insertNextBuyTickerList();
+		        
+		        function insertNextBuyTickerList() {
+					$.ajax({
+						type: "post",
+						url: "/data/insert/nextBuyTicker",
+						data: JSON.stringify({
+							nextBuyTickerList: JSON.stringify(config.nextBuyTickerList)
+						}),
+						contentType: 'application/json; charset=utf-8',
+						dataType : "json"
+					})
+					.done(function(resp) {
 						if (resp.success === true) {
-							console.log("예상종목 데이터 업로드 성공 (seq : " + resp.seq + " / insertCnt : " + resp.insertCnt + ")");
-							$("#buyResult_loop").trigger("click", {seq: resp.seq, isLoop: false});
+							$("#buyResult").trigger("click", {seq: resp.seq});
 						} else {
 							alert("예상종목 데이터 업로드 실패");
 						}
+					})
+				}
+				
+				function runHandler() {
+					initLasteDate();
+					calculate();
+					initBestPosition();
+					if (isEmptyStr(config.buyTicker) === false) {
+						setNextBuyTickerList();
+					}
+				}
+				
+				function setNextBuyTickerList() {
+					var nextBuyTickerData = {};
+					nextBuyTickerData.date = config.lastDate; 
+					nextBuyTickerData.ticker = config.buyTicker;
+					nextBuyTickerData.weight = config.buyWeight;
+					nextBuyTickerData.startLength = config.startLength;
+					nextBuyTickerData.endLength = config.endLength;
+					nextBuyTickerData.bestLength = config.bestLength;
+					nextBuyTickerData.bestPercent = config.bestPercent;
+					nextBuyTickerData.averageByPlus = config.averageByPlus;
+					nextBuyTickerData.averageByMinus = config.averageByMinus;
+					
+					config.nextBuyTickerList.push(nextBuyTickerData);
+				}
+				
+				function initBestPosition() {
+					initBuyTicker();
+					initBestAaverage();
+				}
+				
+				function initBestAaverage() {
+					var averageData = config.averageDataObj[config.lastDate];
+					config.averageByPlus = round4((averageData.sixMonthAgo.plus * 10 + averageData.threeMonthAgo.plus * 20 + averageData.twoMonthAgo.plus * 30 + averageData.oneMonthAgo.plus * 40) / 100);
+					config.averageByMinus = round4((averageData.sixMonthAgo.minus * 10 + averageData.threeMonthAgo.minus * 20 + averageData.twoMonthAgo.minus * 30 + averageData.oneMonthAgo.minus * 40) / 100);
+				}
+				
+				function initBuyTicker() {
+					var successPercentData = {};
+					var maxLength = config.startLength;
+					while(maxLength <= config.endLength) {
+						var nextBuyTickerMomentumResultList = config.nextBuyTickerMomentumResultListObj[maxLength];
+						var cnt = 0;
+						var successCnt = 0;
+						
+						nextBuyTickerMomentumResultList.forEach(function(cur) {
+							cnt++;
+							if (cur.successFlag === true) successCnt++;
+						})
+						
+						successPercentData[maxLength] = round4(successCnt / cnt);
+						maxLength++;
+					}
+					
+					maxLength = config.startLength;
+					var bestLength = 0;
+					var bestPercent = 0;
+					while(maxLength <= config.endLength) {
+						var successPercent = successPercentData[maxLength];
+						
+						if (successPercent > bestPercent) {
+							bestLength = maxLength;
+							bestPercent = successPercent;
+						}
+						
+						maxLength++;
+					}
+					
+					config.bestPercent = bestPercent;
+					config.bestLength = bestLength;
+					
+					if (bestLength === 0) {
+						config.buyTicker = "";
 					} else {
-						var originConfig = JSON.parse(expectedTickerConfig.originConfigStr);
-						originConfig.endLength = config.endLength;
-						originConfig.endLength++;
-
-						console.log("loopCnt : " + expectedTickerConfig.loopCnt + ", " + config.endLength + "/" + expectedTickerConfig.loopEndLength);
-						if (expectedTickerConfig.loopEndLength < originConfig.endLength) {
-							console.log("반복 예상종목 데이터 업로드 성공 (last seq : " + resp.seq + " / loopCnt : " + expectedTickerConfig.loopCnt + ")");
+						config.buyTicker = config.nextBuyTickerMomentumDataObj[bestLength][config.lastDate].buyTicker;
+						config.buyWeight = config.nextBuyTickerMomentumDataObj[bestLength][config.lastDate].buyWeight;
+					}
+				}
+				
+				function calculate() {
+					var maxLength = config.startLength
+					while(maxLength <= config.endLength) {
+						initNextBuyMomentumTickerData(maxLength);
+						maxLength++;
+					}
+					
+					maxLength = config.startLength
+					while(maxLength <= config.endLength) {
+						initNextBuyTickerMomentumResultListObj(maxLength);
+						maxLength++;
+					}
+				}
+				
+				function initNextBuyMomentumTickerData(maxLength) {
+					var lastChangeList = [];
+					var nextBuyTickerMomentumData = {};
+					var nextBuyTickerMomentumDataObj = config.nextBuyTickerMomentumDataObj;
+					var longDataList = config.longDataList;
+					var idx = 0;
+					
+					if (nextBuyTickerMomentumDataObj.hasOwnProperty(maxLength) === true && nextBuyTickerMomentumDataObj[maxLength].afterFirst === true) {
+						nextBuyTickerMomentumData = nextBuyTickerMomentumDataObj[maxLength];
+						lastChangeList = nextBuyTickerMomentumDataObj[maxLength].lastChangeList;
+						idx = longDataList.length - 1;
+					}
+					
+					while(idx < longDataList.length) {
+						var row = longDataList[idx];
+						
+						lastChangeList.push(row.change);
+						if (lastChangeList.length <= maxLength) {
+							idx++;
+							continue;
+						};
+						lastChangeList.shift();
+						
+						var plusCnt = 0;
+						lastChangeList.forEach(function(change) {
+							if (change > 0) {
+								plusCnt += 1;
+							}
+						})
+						
+						var buyTicker = "";
+						var buyWeight = "";
+						var momentum = plusCnt / lastChangeList.length;
+						if (momentum > 0.5) {
+							buyTicker = config.longTicker;
+							buyWeight = round4(momentum);
 						} else {
-							expectedTickerConfig.loopCnt++;
-							$("#expectedTicker").trigger("click", originConfig);
-						}
-					}
-				})
-			}
-			
-			function runHandler() {
-				initLasteDate();
-				calculate();
-				initBestPosition();
-				if (isEmptyStr(config.buyTicker) === false) {
-					setNextBuyTickerList();
-				}
-			}
-			
-			function setNextBuyTickerList() {
-				var nextBuyTickerData = {};
-				nextBuyTickerData.date = config.lastDate; 
-				nextBuyTickerData.ticker = config.buyTicker;
-				nextBuyTickerData.weight = config.buyWeight;
-				nextBuyTickerData.endLength = config.endLength;
-				nextBuyTickerData.bestLength = config.bestLength;
-				nextBuyTickerData.bestPercent = config.bestPercent;
-				nextBuyTickerData.averageByPlus = config.averageByPlus;
-				nextBuyTickerData.averageByMinus = config.averageByMinus;
-				
-				config.nextBuyTickerList.push(nextBuyTickerData);
-				if (config.isLoop === false) {
-					console.log(config.idxMsg + JSON.stringify(nextBuyTickerData));
-				}
-			}
-			
-			function initBestPosition() {
-				initBuyTicker();
-				initBestAaverage();
-			}
-			
-			function initBestAaverage() {
-				var averageData = expectedTickerConfig.averageDataObj[config.lastDate];
-				config.averageByPlus = round4((averageData.sixMonthAgo.plus * 10 + averageData.threeMonthAgo.plus * 20 + averageData.twoMonthAgo.plus * 30 + averageData.oneMonthAgo.plus * 40) / 100);
-				config.averageByMinus = round4((averageData.sixMonthAgo.minus * 10 + averageData.threeMonthAgo.minus * 20 + averageData.twoMonthAgo.minus * 30 + averageData.oneMonthAgo.minus * 40) / 100);
-			}
-			
-			function initBuyTicker() {
-				var successPercentData = {};
-				var maxLength = config.startLength;
-				while(maxLength <= config.endLength) {
-					var nextBuyTickerMomentumResultList = expectedTickerConfig.nextBuyTickerMomentumResultListObj[maxLength];
-					var cnt = 0;
-					var successCnt = 0;
-					
-					nextBuyTickerMomentumResultList.forEach(function(cur) {
-						cnt++;
-						if (cur.successFlag === true) successCnt++;
-					})
-					
-					successPercentData[maxLength] = round4(successCnt / cnt);
-					maxLength++;
-				}
-				
-				maxLength = config.startLength;
-				var bestLength = 0;
-				var bestPercent = 0;
-				while(maxLength <= config.endLength) {
-					var successPercent = successPercentData[maxLength];
-					
-					if (successPercent > bestPercent) {
-						bestLength = maxLength;
-						bestPercent = successPercent;
-					}
-					
-					maxLength++;
-				}
-				
-				config.bestPercent = bestPercent;
-				config.bestLength = bestLength;
-				
-				if (bestLength === 0) {
-					config.buyTicker = "";
-				} else {
-					config.buyTicker = expectedTickerConfig.nextBuyTickerMomentumDataObj[bestLength][config.lastDate].buyTicker;
-					config.buyWeight = expectedTickerConfig.nextBuyTickerMomentumDataObj[bestLength][config.lastDate].buyWeight;
-//					config.buyTicker = config.longDataList[config.longDataList.length - 1].ticker;
-				}
-			}
-			
-			function calculate() {
-				var maxLength = config.startLength
-				while(maxLength <= config.endLength) {
-					initNextBuyMomentumTickerData(maxLength);
-					maxLength++;
-				}
-				
-				maxLength = config.startLength
-				while(maxLength <= config.endLength) {
-					initNextBuyTickerMomentumResultListObj(maxLength);
-					maxLength++;
-				}
-			}
-			
-			function initNextBuyMomentumTickerData(maxLength) {
-				var lastChangeList = [];
-				var nextBuyTickerMomentumData = {};
-				var nextBuyTickerMomentumDataObj = expectedTickerConfig.nextBuyTickerMomentumDataObj;
-				var longDataList = config.longDataList;
-				var idx = 0;
-				
-				if (nextBuyTickerMomentumDataObj.hasOwnProperty(maxLength) === true && nextBuyTickerMomentumDataObj[maxLength].afterFirst === true) {
-					nextBuyTickerMomentumData = nextBuyTickerMomentumDataObj[maxLength];
-					lastChangeList = nextBuyTickerMomentumDataObj[maxLength].lastChangeList;
-					idx = longDataList.length - 1;
-				}
-				
-				while(idx < longDataList.length) {
-					var row = longDataList[idx];
-					
-					lastChangeList.push(row.change);
-					if (lastChangeList.length <= maxLength) {
-						idx++;
-						continue;
-					};
-					lastChangeList.shift();
-					
-					var plusCnt = 0;
-					lastChangeList.forEach(function(change) {
-						if (change > 0) {
-							plusCnt += 1;
-						}
-					})
-					
-					var buyTicker = "";
-					var buyWeight = "";
-					var momentum = plusCnt / lastChangeList.length;
-					if (momentum > 0.5) {
-						buyTicker = config.longTicker;
-						buyWeight = round4(momentum);
-					} else {
-						buyTicker = config.shortTicker;
-						buyWeight = Math.abs(round4(momentum - 1));
-					}
-					
-					// {20160505 : tqqq}
-					// 설명 : 20160505의 다음 거래일날 tqqq 매수
-					nextBuyTickerMomentumData[row.date] = {
-						buyTicker: buyTicker,
-						buyWeight: buyWeight,
-					};
-					
-					idx++;
-				}
-				
-				nextBuyTickerMomentumDataObj[maxLength] = nextBuyTickerMomentumData;
-				nextBuyTickerMomentumDataObj[maxLength].lastChangeList = lastChangeList;
-				nextBuyTickerMomentumDataObj[maxLength].afterFirst = true;
-			}
-			
-			function initNextBuyTickerMomentumResultListObj(maxLength) {
-				var longDataList = config.longDataList;
-				var shortDataList = config.shortDataList;
-				var longTicker = config.longTicker;
-				var shortTicker = config.shortTicker;
-				var nextBuyTickerMomentumData = expectedTickerConfig.nextBuyTickerMomentumDataObj[maxLength];
-				var todayBuyTickerData = {};
-				var nextBuyTickerMomentumResultList = [];
-				var nextBuyTickerMomentumResultListObj = expectedTickerConfig.nextBuyTickerMomentumResultListObj;
-				var idx = 0;
-				
-				if (nextBuyTickerMomentumResultListObj.hasOwnProperty(maxLength) === true && nextBuyTickerMomentumResultListObj[maxLength].afterFirst === true) {
-					nextBuyTickerMomentumResultList = nextBuyTickerMomentumResultListObj[maxLength];
-					idx = longDataList.length - 2;
-				}
-				
-				while(idx < longDataList.length) {
-					var longRow = longDataList[idx];
-					var shortRow = shortDataList[idx];
-					var date = longRow.date;
-					var successFlag = false;
-					
-					// 아래의 todayBuyTickerData에 데이터가 존재해야됨.
-					if (todayBuyTickerData.buyFlag === true) {
-						if (todayBuyTickerData.ticker === longTicker) {
-							if (longRow.change > 0) {
-								successFlag = true;
-							}
-						} else if (todayBuyTickerData.ticker === shortTicker) {
-							if (shortRow.change > 0) {
-								successFlag = true;
-							}
+							buyTicker = config.shortTicker;
+							buyWeight = Math.abs(round4(momentum - 1));
 						}
 						
-						var result = {
-							date: date,
-							buyTicker: todayBuyTickerData.ticker,
-							successFlag: successFlag,
-						}
-						result[longTicker] = longRow;
-						result[shortTicker] = shortRow;
+						// {20160505 : tqqq}
+						// 설명 : 20160505의 다음 거래일날 tqqq 매수
+						nextBuyTickerMomentumData[row.date] = {
+							buyTicker: buyTicker,
+							buyWeight: buyWeight,
+						};
 						
-						nextBuyTickerMomentumResultList.push(result);
-						todayBuyTickerData = {};
-					}
-					
-					// nextBuyTickerMomentumDataObj는 다음날의 사야될 ticker를 알려준다
-					if (nextBuyTickerMomentumData.hasOwnProperty(date) === false || isEmptyStr(nextBuyTickerMomentumData[date].buyTicker) === true) {
 						idx++;
-						continue;
-					};
-					
-					// todayBuyTickerData.buyFlag = true로 바꾸면서 다음 거래일날 todayBuyTickerData.ticker에 대한 successFlag값을 구할수 있음.
-					todayBuyTickerData = {
-						buyFlag: true,
-						ticker: nextBuyTickerMomentumData[date].buyTicker,
 					}
 					
-					idx++;
+					nextBuyTickerMomentumDataObj[maxLength] = nextBuyTickerMomentumData;
+					nextBuyTickerMomentumDataObj[maxLength].lastChangeList = lastChangeList;
+					nextBuyTickerMomentumDataObj[maxLength].afterFirst = true;
 				}
 				
-				// 0 :{date: '20151118', buyTicker: 'tqqq', successFlag: true, row: {…}}
-				// 설명 : 20151118에 tqqq를 샀더니 successFlag:true(성공)을 했다
-				nextBuyTickerMomentumResultListObj[maxLength] = nextBuyTickerMomentumResultList.slice(config.endLength * -1);
-				nextBuyTickerMomentumResultListObj[maxLength].afterFirst = true;
-			}
-			
-			function initLasteDate() {
-				config.lastDate = config.longDataList[config.longDataList.length - 1].date;
+				function initNextBuyTickerMomentumResultListObj(maxLength) {
+					var longDataList = config.longDataList;
+					var shortDataList = config.shortDataList;
+					var longTicker = config.longTicker;
+					var shortTicker = config.shortTicker;
+					var nextBuyTickerMomentumData = config.nextBuyTickerMomentumDataObj[maxLength];
+					var todayBuyTickerData = {};
+					var nextBuyTickerMomentumResultList = [];
+					var nextBuyTickerMomentumResultListObj = config.nextBuyTickerMomentumResultListObj;
+					var idx = 0;
+					
+					if (nextBuyTickerMomentumResultListObj.hasOwnProperty(maxLength) === true && nextBuyTickerMomentumResultListObj[maxLength].afterFirst === true) {
+						nextBuyTickerMomentumResultList = nextBuyTickerMomentumResultListObj[maxLength];
+						idx = longDataList.length - 2;
+					}
+					
+					while(idx < longDataList.length) {
+						var longRow = longDataList[idx];
+						var shortRow = shortDataList[idx];
+						var date = longRow.date;
+						var successFlag = false;
+						
+						// 아래의 todayBuyTickerData에 데이터가 존재해야됨.
+						if (todayBuyTickerData.buyFlag === true) {
+							if (todayBuyTickerData.ticker === longTicker) {
+								if (longRow.change > 0) {
+									successFlag = true;
+								}
+							} else if (todayBuyTickerData.ticker === shortTicker) {
+								if (shortRow.change > 0) {
+									successFlag = true;
+								}
+							}
+							
+							var result = {
+								date: date,
+								buyTicker: todayBuyTickerData.ticker,
+								successFlag: successFlag,
+							}
+							result[longTicker] = longRow;
+							result[shortTicker] = shortRow;
+							
+							nextBuyTickerMomentumResultList.push(result);
+							todayBuyTickerData = {};
+						}
+						
+						// nextBuyTickerMomentumDataObj는 다음날의 사야될 ticker를 알려준다
+						if (nextBuyTickerMomentumData.hasOwnProperty(date) === false || isEmptyStr(nextBuyTickerMomentumData[date].buyTicker) === true) {
+							idx++;
+							continue;
+						};
+						
+						// todayBuyTickerData.buyFlag = true로 바꾸면서 다음 거래일날 todayBuyTickerData.ticker에 대한 successFlag값을 구할수 있음.
+						todayBuyTickerData = {
+							buyFlag: true,
+							ticker: nextBuyTickerMomentumData[date].buyTicker,
+						}
+						
+						idx++;
+					}
+					
+					// 0 :{date: '20151118', buyTicker: 'tqqq', successFlag: true, row: {…}}
+					// 설명 : 20151118에 tqqq를 샀더니 successFlag:true(성공)을 했다
+					nextBuyTickerMomentumResultListObj[maxLength] = nextBuyTickerMomentumResultList.slice(config.endLength * -1);
+					nextBuyTickerMomentumResultListObj[maxLength].afterFirst = true;
+				}
+				
+				function initLasteDate() {
+					config.lastDate = config.longDataList[config.longDataList.length - 1].date;
+				}
 			}
 		})
 		
@@ -782,7 +783,7 @@ function initNextBuyTickerResult(config) {
 	var todayBuyTickerData = {};
 	var myStock = {
 		money: 0,
-		betMoney: 30000,
+		betMoney: 20000,
 		defaultBetMoney: 20000,
 		maxBetMoney: 30000,
 		positionTicker: "",
@@ -882,7 +883,8 @@ function initNextBuyTickerResult(config) {
 //				myStock.betMoney = myStock.maxBetMoney; 
 //			}
 //			myStock.betMoney = round2((myStock.defaultBetMoney + myStock.profitAndLoss) * 0.8);
-			var betMoney = round2(myStock.betMoney * todayBuyTickerData.weight);
+//			var betMoney = round2(myStock.betMoney * todayBuyTickerData.weight);
+			var betMoney = round2(myStock.betMoney);
 			if (myStock.positionTicker !== todayBuyTickerData.ticker) {
 				charge = round2(myStock.betMoney * myStock.charge);
 			}
@@ -979,14 +981,6 @@ function initNextBuyTickerResult(config) {
 		todayBuyTickerData.buyFlag = true;
 		idx++;
 	}
-	
-//	if (config.isSimulation === true) {
-		console.log(resultDataList);
-		console.log(nextBuyTickerDataObj);
-		console.log(todayBuyTickerData);
-		console.log(myStock);
-		console.log(config.nextBuyTickerResultList[config.nextBuyTickerResultList.length - 1]);
-//	}
 }
 
 
@@ -1011,30 +1005,6 @@ function getTickerData(config) {
 		.fail(function() {
 			reject();
 		})
-	})
-}
-
-
-function insertScript(seq, script) {
-	$.ajax({
-		type: "post",
-		url: "/data/insert/script",
-		data: JSON.stringify({
-			seq: seq,
-			script: script,
-		}),
-		contentType: 'application/json; charset=utf-8',
-		dataType : "json"
-	})
-	.done(function(resp) {
-		if (resp.success === true) {
-			console.log("스크립트 저장 성공");
-		} else {
-			console.log("스크립트 저장 실패");
-		}
-	})
-	.fail(function() {
-		console.log("스크립트 저장 실패");
 	})
 }
 

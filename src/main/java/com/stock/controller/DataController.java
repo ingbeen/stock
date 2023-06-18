@@ -6,7 +6,6 @@ import java.util.List;
 import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -181,12 +180,13 @@ public class DataController {
 	}
 	
 	@ResponseBody
-	@GetMapping("/select/nextBuyTickerResult")
-	public Map<String, Object> selectNextBuyTickerResult() {
+	@PostMapping("/select/nextBuyTickerResult")
+	public Map<String, Object> selectNextBuyTickerResult(@RequestBody Map<String, Object> param) {
 		Map<String, Object> result = new HashMap<>();
 		
 		try {
-			List<Map<String, Object>> nextBuyTickerResultList = dataMapper.selectNextBuyTickerResult();
+			List<Object> seqList = JsonUtil.getList((String) param.get("seqList"));
+			List<Map<String, Object>> nextBuyTickerResultList = dataMapper.selectNextBuyTickerResult(seqList);
 
 			result.put("nextBuyTickerResultList", nextBuyTickerResultList);
 			result.put("success", true);
@@ -206,6 +206,39 @@ public class DataController {
 		try {
 			dataMapper.insertScript(param);
 			
+			result.put("success", true);
+		} catch (Exception e) {
+			e.printStackTrace();
+			result.put("success", false);
+		}
+		
+		return result;
+	}
+	
+	@ResponseBody
+	@PostMapping("/insert/simulationResult")
+	public Map<String, Object> insertSimulationResult(@RequestBody Map<String, Object> param) {
+		Map<String, Object> result = new HashMap<>();
+		
+		try {
+			List<Map<String, Object>> simulationResultList = JsonUtil.getListMap((String) param.get("simulationResultList"));
+			int insertCnt = 0;
+
+			List<Map<String, Object>> tempSimulationResultList = new ArrayList<>();
+			int limit = 1000;
+			for (Map<String, Object> simulationResultData : simulationResultList) {
+				tempSimulationResultList.add(simulationResultData);
+				if (tempSimulationResultList.size() % limit == 0) {
+					insertCnt += dataMapper.insertSimulationResult(tempSimulationResultList);
+					tempSimulationResultList.clear();
+				}
+			}
+			
+			if (tempSimulationResultList.size() > 0) {
+				insertCnt += dataMapper.insertSimulationResult(tempSimulationResultList);
+			}
+			
+			result.put("insertCnt", insertCnt);
 			result.put("success", true);
 		} catch (Exception e) {
 			e.printStackTrace();

@@ -7,12 +7,21 @@
 </head>
 <body>
 <!-- 	<div style="display: none;"> -->
-	<button id="upload">업로드</button>
-	<button id="expectedTicker">전체 거래일 예상종목</button>
-	<button id="expectedTicker_loop" style="display: none;">반복 / 전체 거래일 예상종목</button>
-	<button id="buyResult_loop" style="display: none;">반복 / 전체 거래일 매수결과</button>
-	<button id="buyResult_loop_sub" style="display: none;">반복 서브 / 전체 거래일 매수결과</button>
-	<button id="simulation">시뮬레이션</button>
+	<div>
+		<button id="upload">업로드</button>
+	</div>
+	<div>
+		<input id="startLength" type="text" value="5"></input>
+		<input id="endLength" type="text" value="10"></input>
+		<button id="expectedTicker">예상종목 -> 매수결과 반복</button>
+		<button id="buyResult" style="display: none;">예상종목 -> 매수결과 반복 / 서브</button>
+	</div>
+	<div>
+		<input id="seq1" type="text" value="1"></input>
+		<input id="seq2" type="text" value="2"></input>
+		<button id="simulation">시뮬레이션 반복</button>
+	</div>
+	
 <!-- 	</div> -->
 	
 	<script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
