@@ -19,6 +19,8 @@ CREATE TABLE `next_buy_ticker` (
   `seq` int(11) NOT NULL,
   `bDate` varchar(8) NOT NULL,
   `nextTicker` varchar(10) NOT NULL,
+  `nextWeight` decimal(5,4) NOT NULL,
+  `startLength` int(11) NOT NULL,
   `endLength` int(11) NOT NULL,
   `bestLength` int(11) NOT NULL,
   `bestPercent` decimal(5,4) NOT NULL,
@@ -48,4 +50,12 @@ CREATE TABLE `next_buy_ticker_result` (
   `load_dttm` datetime DEFAULT current_timestamp(),
   PRIMARY KEY (`seq`,`bDate`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_general_ci;
+
+-- stock.script definition
+
+CREATE TABLE `script` (
+  `script` longtext NOT NULL,
+  `load_dttm` datetime DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
 
