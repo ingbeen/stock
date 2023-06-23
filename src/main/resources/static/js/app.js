@@ -875,17 +875,8 @@ function initNextBuyTickerResult(config) {
 					profitAndLoss: 0
 				})
 				lastIdxByYearList++;
-//				myStock.betMoney = myStock.defaultBetMoney;
 			}
 			
-//			if (myStock.defaultBetMoney > myStock.betMoney) {
-//				myStock.betMoney = myStock.defaultBetMoney;
-//			} else if (myStock.maxBetMoney < myStock.betMoney) {
-//				myStock.betMoney = myStock.maxBetMoney; 
-//			}
-//			myStock.betMoney = round2((myStock.defaultBetMoney + myStock.profitAndLoss) * 0.8);
-//			var betMoney = round2(myStock.betMoney * todayBuyTickerData.weight);
-			var betMoney = round2(myStock.betMoney);
 			if (myStock.positionTicker === "") {
 				charge = round2(myStock.betMoney * myStock.charge);
 			} else if (myStock.positionTicker !== todayBuyTickerData.ticker) {
@@ -899,7 +890,7 @@ function initNextBuyTickerResult(config) {
 				myStock.positionTicker = todayBuyTickerData.ticker;
 			}
 			
-			var curProfitAndLoss = round2(betMoney * curChange - charge);
+			var curProfitAndLoss = round2(myStock.betMoney * curChange - charge);
 			myStock.profitAndLoss = round2(myStock.profitAndLoss + curProfitAndLoss);
 			myStock.profitAndLossList.push(curProfitAndLoss);
 			profitAndLossListByMonth[lastIdxByMonthList].profitAndLoss = round2(profitAndLossListByMonth[lastIdxByMonthList].profitAndLoss + curProfitAndLoss);
@@ -914,7 +905,7 @@ function initNextBuyTickerResult(config) {
 				buyWeight: todayBuyTickerData.weight,
 				successFlag: successFlag,
 				change: curChange,
-				betMoney: betMoney,
+				betMoney: myStock.betMoney,
 			}
 			result[longTicker] = longRow;
 			result[shortTicker] = shoutRow;
@@ -963,12 +954,13 @@ function initNextBuyTickerResult(config) {
 					seq: config.seq,
 					date: date,
 					profitAndLoss: round0(myStock.profitAndLoss),
+					todayProfitAndLoss: round0(curProfitAndLoss),
+					avgProfitAndLossByMonth: round0(avgProfitAndLossByMonth),
+					avgProfitAndLossByYear: round0(avgProfitAndLossByYear),
 					oneMonthAgoProfitAndLoss: round0(d3.sum(myStock.profitAndLossList.slice(-20))),
 					twoMonthAgoProfitAndLoss: round0(d3.sum(myStock.profitAndLossList.slice(-20 * 2))),
 					threeMonthAgoProfitAndLoss: round0(d3.sum(myStock.profitAndLossList.slice(-20 * 3))),
 					sixMonthAgoProfitAndLoss: round0(d3.sum(myStock.profitAndLossList.slice(-20 * 6))),
-					avgProfitAndLossByMonth: round0(avgProfitAndLossByMonth),
-					avgProfitAndLossByYear: round0(avgProfitAndLossByYear),
 					avgSuccessPercent: avgSuccessPercent,
 					avgSuccessChange: avgSuccessChange,
 					avgFailPercent: avgFailPercent,

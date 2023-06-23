@@ -107,12 +107,13 @@
 			seq
 			, bDate
 			, profitAndLoss
+			, todayProfitAndLoss
+			, avgProfitAndLossByMonth
+			, avgProfitAndLossByYear
 			, oneMonthAgoProfitAndLoss
 			, twoMonthAgoProfitAndLoss
 			, threeMonthAgoProfitAndLoss
 			, sixMonthAgoProfitAndLoss
-			, avgProfitAndLossByMonth
-			, avgProfitAndLossByYear
 			, avgSuccessPercent
 			, avgSuccessChange
 			, avgFailPercent
@@ -124,12 +125,13 @@
 			#{item.seq}
 			, #{item.date}
 			, #{item.profitAndLoss}
+			, #{item.todayProfitAndLoss}
+			, #{item.avgProfitAndLossByMonth}
+			, #{item.avgProfitAndLossByYear}
 			, #{item.oneMonthAgoProfitAndLoss}
 			, #{item.twoMonthAgoProfitAndLoss}
 			, #{item.threeMonthAgoProfitAndLoss}
 			, #{item.sixMonthAgoProfitAndLoss}
-			, #{item.avgProfitAndLossByMonth}
-			, #{item.avgProfitAndLossByYear}
 			, #{item.avgSuccessPercent}
 			, #{item.avgSuccessChange}
 			, #{item.avgFailPercent}
@@ -187,12 +189,13 @@
 			seq
 			, bDate
 			, profitAndLoss
+			, todayProfitAndLoss
+			, avgProfitAndLossByMonth
+			, avgProfitAndLossByYear
 			, oneMonthAgoProfitAndLoss
 			, twoMonthAgoProfitAndLoss
 			, threeMonthAgoProfitAndLoss
 			, sixMonthAgoProfitAndLoss
-			, avgProfitAndLossByMonth
-			, avgProfitAndLossByYear
 			, avgSuccessPercent
 			, avgSuccessChange
 			, avgFailPercent
@@ -204,12 +207,13 @@
 			#{item.seq}
 			, #{item.date}
 			, #{item.profitAndLoss}
+			, #{item.todayProfitAndLoss}
+			, #{item.avgProfitAndLossByMonth}
+			, #{item.avgProfitAndLossByYear}
 			, #{item.oneMonthAgoProfitAndLoss}
 			, #{item.twoMonthAgoProfitAndLoss}
 			, #{item.threeMonthAgoProfitAndLoss}
 			, #{item.sixMonthAgoProfitAndLoss}
-			, #{item.avgProfitAndLossByMonth}
-			, #{item.avgProfitAndLossByYear}
 			, #{item.avgSuccessPercent}
 			, #{item.avgSuccessChange}
 			, #{item.avgFailPercent}
