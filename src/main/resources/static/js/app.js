@@ -684,29 +684,6 @@ function init() {
 				insertResultData(param);
 			})
 	        
-	        function deleteZeroDay(resultData, tickerList) {
-				var longTicker = tickerList[0];
-				var shortTicker = tickerList[1];
-				var longDataList = resultData[longTicker];
-				var shortDataList = resultData[shortTicker];
-				var tempResultData = {};
-				
-				tempResultData[longTicker] = [];
-				tempResultData[shortTicker] = [];
-				
-				longDataList.forEach(function(row, idx) {
-					if (idx === 0) return;
-
-					var longChange = row.change;
-					var shortChange = shortDataList[idx].change;
-					if (longChange === 0 || shortChange === 0) return;
-					tempResultData[longTicker].push(row);
-					tempResultData[shortTicker].push(shortDataList[idx]);
-				})
-				
-				return tempResultData;
-			}
-	        
 	        function addChange(resultData, tickerList) {
 				var longDataList = resultData[tickerList[0]];
 				var shortDataList = resultData[tickerList[1]];
@@ -730,6 +707,29 @@ function init() {
 					var change = round4(row.closePrice / shortDataList[idx - 1].closePrice - 1)
 					shortDataList[idx].change = change;
 				})
+			}
+	        
+	        function deleteZeroDay(resultData, tickerList) {
+				var longTicker = tickerList[0];
+				var shortTicker = tickerList[1];
+				var longDataList = resultData[longTicker];
+				var shortDataList = resultData[shortTicker];
+				var tempResultData = {};
+				
+				tempResultData[longTicker] = [];
+				tempResultData[shortTicker] = [];
+				
+				longDataList.forEach(function(row, idx) {
+					if (idx === 0) return;
+
+					var longChange = row.change;
+					var shortChange = shortDataList[idx].change;
+					if (longChange === 0 || shortChange === 0) return;
+					tempResultData[longTicker].push(row);
+					tempResultData[shortTicker].push(shortDataList[idx]);
+				})
+				
+				return tempResultData;
 			}
 	        
 	        function getParam(resultData) {
@@ -806,32 +806,33 @@ function initNextBuyTickerResult(config) {
 		var date = longRow.date;
 		var buyRow = {};
 		var LastBuyRow = {};
-		var stopLoss = 0;
+		var stopLossChange = 0;
 		var successFlag = false;
 		var curChange = 0;
 		var charge = 0;
+		var isStopLoss = false;
 		
 		if (todayBuyTickerData.buyFlag === true) {
 			if (todayBuyTickerData.ticker === longTicker) {
 				buyRow = longRow;
 				LastBuyRow = longDataList[idx - 1];
-				stopLoss = round4(todayBuyTickerData.averageByMinus * myStock.stopLossWight);
+				stopLossChange = round4(todayBuyTickerData.averageByMinus * myStock.stopLossWight);
 			} else if (todayBuyTickerData.ticker === shortTicker) {
 				buyRow = shoutRow;
 				LastBuyRow = shortDataList[idx - 1];
-				stopLoss = round4(todayBuyTickerData.averageByPlus * myStock.stopLossWight * -1);
+				stopLossChange = round4(todayBuyTickerData.averageByPlus * myStock.stopLossWight * -1);
 			}
-							
-//			var stopLossByOpenPrice = round4(buyRow.openPrice / LastBuyRow.closePrice - 1);
-			var stopLossyLowPrice = round4(buyRow.lowPrice / LastBuyRow.closePrice - 1);
-//			if (stopLossByOpenPrice < stopLoss) {
-//				console.log(stopLossByOpenPrice)
-//				curChange = stopLossByOpenPrice;
-//				myStock.positionTicker = "";
-//			} else 
-			if (stopLossyLowPrice < stopLoss) {
-				curChange = stopLoss;
-				myStock.positionTicker = "";
+			
+			var lowPriceChange = 0;
+			if (myStock.positionTicker !== todayBuyTickerData.ticker) {
+				lowPriceChange = round4(buyRow.lowPrice / buyRow.openPrice - 1);
+			} else {
+				lowPriceChange = round4(buyRow.lowPrice / LastBuyRow.closePrice - 1);
+			}
+			
+			if (lowPriceChange < stopLossChange) {
+				curChange = stopLossChange;
+				isStopLoss = true;
 			} else {
 				curChange = buyRow.change;
 			}
@@ -885,10 +886,18 @@ function initNextBuyTickerResult(config) {
 //			myStock.betMoney = round2((myStock.defaultBetMoney + myStock.profitAndLoss) * 0.8);
 //			var betMoney = round2(myStock.betMoney * todayBuyTickerData.weight);
 			var betMoney = round2(myStock.betMoney);
-			if (myStock.positionTicker !== todayBuyTickerData.ticker) {
+			if (myStock.positionTicker === "") {
 				charge = round2(myStock.betMoney * myStock.charge);
+			} else if (myStock.positionTicker !== todayBuyTickerData.ticker) {
+				charge = round2(myStock.betMoney * myStock.charge * 2);
 			}
-			myStock.positionTicker = todayBuyTickerData.ticker;
+			
+			if (isStopLoss) {
+				myStock.positionTicker = "";
+				charge = round2(charge + myStock.betMoney * myStock.charge);
+			} else {
+				myStock.positionTicker = todayBuyTickerData.ticker;
+			}
 			
 			var curProfitAndLoss = round2(betMoney * curChange - charge);
 			myStock.profitAndLoss = round2(myStock.profitAndLoss + curProfitAndLoss);

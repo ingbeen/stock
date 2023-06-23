@@ -51,6 +51,28 @@ CREATE TABLE `next_buy_ticker_result` (
   PRIMARY KEY (`seq`,`bDate`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_general_ci;
 
+
+-- stock.simulation_result definition
+
+CREATE TABLE `simulation_result` (
+  `seq` varchar(30) NOT NULL,
+  `bDate` varchar(8) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
+  `profitAndLoss` int(11) NOT NULL,
+  `oneMonthAgoProfitAndLoss` int(11) NOT NULL,
+  `twoMonthAgoProfitAndLoss` int(11) NOT NULL,
+  `threeMonthAgoProfitAndLoss` int(11) NOT NULL,
+  `sixMonthAgoProfitAndLoss` int(11) NOT NULL,
+  `avgProfitAndLossByMonth` int(11) NOT NULL,
+  `avgProfitAndLossByYear` int(11) NOT NULL,
+  `avgSuccessPercent` decimal(5,4) NOT NULL,
+  `avgFailPercent` decimal(5,4) NOT NULL,
+  `avgSuccessChange` decimal(5,4) NOT NULL,
+  `avgFailChange` decimal(5,4) NOT NULL,
+  `load_dttm` datetime DEFAULT current_timestamp(),
+  PRIMARY KEY (`seq`,`bDate`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_general_ci;
+
+
 -- stock.script definition
 
 CREATE TABLE `script` (
