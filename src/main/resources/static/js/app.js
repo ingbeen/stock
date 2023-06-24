@@ -505,7 +505,6 @@ function init() {
 						lastChangeList.shift();
 						
 						var plusCnt = 0;
-						debugger
 						lastChangeList.forEach(function(change) {
 							if (change > 0) {
 								plusCnt += 1;
@@ -1016,8 +1015,6 @@ function initNextBuyTickerResult(config) {
 
 		idx++;
 	}
-	
-	debugger
 		
 	function sell(ticker, sellPrice) {
 		var row = {};
