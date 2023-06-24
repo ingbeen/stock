@@ -141,7 +141,7 @@
 			, b.nextWeight as 'weight'
 			, b.averageByPlus
 			, b.averageByMinus
-			, a.profitandloss
+			, a.profitAndLoss
 			, a.oneMonthAgoProfitAndLoss
 			, a.twoMonthAgoProfitAndLoss
 			, a.threeMonthAgoProfitAndLoss
