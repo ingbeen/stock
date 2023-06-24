@@ -82,7 +82,7 @@
 		</foreach>
     </insert>
 
-    <select id="selectNextBuyTicker" parameterType="int">
+    <select id="selectNextBuyTicker" parameterType="int" resultType="Map">
 		select bDate as 'date'
 			, nextTicker as 'ticker'
 			, nextWeight as 'weight'
@@ -108,16 +108,13 @@
 			, bDate
 			, profitAndLoss
 			, todayProfitAndLoss
+			, unrealizedProfitAndLoss
 			, avgProfitAndLossByMonth
 			, avgProfitAndLossByYear
 			, oneMonthAgoProfitAndLoss
 			, twoMonthAgoProfitAndLoss
 			, threeMonthAgoProfitAndLoss
 			, sixMonthAgoProfitAndLoss
-			, avgSuccessPercent
-			, avgSuccessChange
-			, avgFailPercent
-			, avgFailChange
 		) 
 		values 
 		<foreach collection="list" item="item" separator=",">
@@ -126,21 +123,18 @@
 			, #{item.date}
 			, #{item.profitAndLoss}
 			, #{item.todayProfitAndLoss}
+			, #{item.unrealizedProfitAndLoss}
 			, #{item.avgProfitAndLossByMonth}
 			, #{item.avgProfitAndLossByYear}
 			, #{item.oneMonthAgoProfitAndLoss}
 			, #{item.twoMonthAgoProfitAndLoss}
 			, #{item.threeMonthAgoProfitAndLoss}
 			, #{item.sixMonthAgoProfitAndLoss}
-			, #{item.avgSuccessPercent}
-			, #{item.avgSuccessChange}
-			, #{item.avgFailPercent}
-			, #{item.avgFailChange}
 		)
 		</foreach>
     </insert>
 
-    <select id="selectNextBuyTickerResult" parameterType="List">
+    <select id="selectNextBuyTickerResult" parameterType="String" resultType="Map">
 		select a.seq
 			, a.bDate as 'date'
 			, b.nextTicker as 'ticker'
@@ -154,21 +148,12 @@
 			, a.sixMonthAgoProfitAndLoss
 			, a.avgProfitAndLossByMonth
 			, a.avgProfitAndLossByYear
-			, a.avgSuccessPercent
-			, a.avgFailPercent
-			, a.avgSuccessChange
-			, a.avgFailChange
 		from next_buy_ticker_result a
 		inner join next_buy_ticker b
 		on a.seq = b.seq
 		and a.bDate = b.bDate
 		where 1=1
-		and a.seq in 
-			(
-		<foreach collection="list" item="item" separator=",">
-			#{item}
-		</foreach>
-			)
+		and a.bDate between concat(#{value}, '0101') and concat(#{value}, '1231')
 		order by a.bDate, a.seq
 	</select>
     
@@ -190,16 +175,13 @@
 			, bDate
 			, profitAndLoss
 			, todayProfitAndLoss
+			, unrealizedProfitAndLoss
 			, avgProfitAndLossByMonth
 			, avgProfitAndLossByYear
 			, oneMonthAgoProfitAndLoss
 			, twoMonthAgoProfitAndLoss
 			, threeMonthAgoProfitAndLoss
 			, sixMonthAgoProfitAndLoss
-			, avgSuccessPercent
-			, avgSuccessChange
-			, avgFailPercent
-			, avgFailChange
 		) 
 		values 
 		<foreach collection="list" item="item" separator=",">
@@ -208,16 +190,13 @@
 			, #{item.date}
 			, #{item.profitAndLoss}
 			, #{item.todayProfitAndLoss}
+			, #{item.unrealizedProfitAndLoss}
 			, #{item.avgProfitAndLossByMonth}
 			, #{item.avgProfitAndLossByYear}
 			, #{item.oneMonthAgoProfitAndLoss}
 			, #{item.twoMonthAgoProfitAndLoss}
 			, #{item.threeMonthAgoProfitAndLoss}
 			, #{item.sixMonthAgoProfitAndLoss}
-			, #{item.avgSuccessPercent}
-			, #{item.avgSuccessChange}
-			, #{item.avgFailPercent}
-			, #{item.avgFailChange}
 		)
 		</foreach>
     </insert>

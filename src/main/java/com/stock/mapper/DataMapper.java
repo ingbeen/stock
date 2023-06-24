@@ -16,7 +16,7 @@ public interface DataMapper {
 	List<Map<String, Object>> selectNextBuyTicker(int seq);
 	String getLastSubSeq(int subSeq);
 	int insertNextBuyTickerResult(List<Map<String, Object>> buyResultData);
-	List<Map<String, Object>> selectNextBuyTickerResult(List<Object> seqList);
+	List<Map<String, Object>> selectNextBuyTickerResult(String year);
 	void insertScript(Map<String, Object> param);
 	int insertSimulationResult(List<Map<String, Object>> simulationResultData);
 

@@ -185,8 +185,8 @@ public class DataController {
 		Map<String, Object> result = new HashMap<>();
 		
 		try {
-			List<Object> seqList = JsonUtil.getList((String) param.get("seqList"));
-			List<Map<String, Object>> nextBuyTickerResultList = dataMapper.selectNextBuyTickerResult(seqList);
+			String year = (String) param.get("year");
+			List<Map<String, Object>> nextBuyTickerResultList = dataMapper.selectNextBuyTickerResult(year);
 
 			result.put("nextBuyTickerResultList", nextBuyTickerResultList);
 			result.put("success", true);
