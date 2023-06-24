@@ -608,6 +608,7 @@ function init() {
 				var rowCnt = 0;
 				var maxColCnt = 0;
 				var tickerList = [];
+				var lastDateResultData = {};
 				var resultData = {};
 				
 				rows.forEach(function(row) {
@@ -627,6 +628,44 @@ function init() {
 						maxColCnt = colCnt - 1;
 						rowCnt++;
 						return;
+					}
+					
+					if (rowCnt === 2) {
+						while(colCnt <= maxColCnt) {
+							var ticker = tickerList[tickerCnt];
+							var dateColStr = colCnt.toString();
+							var openPriceColStr = (colCnt + 1).toString();
+							var highPriceColStr = (colCnt + 2).toString();
+							var lowPriceColStr = (colCnt + 3).toString();
+							var closePriceColStr = (colCnt + 4).toString();
+							var date = "";
+							var openPrice = 0;
+							var highPrice = 0;
+							var lowPrice = 0;
+							var closePrice = 0;
+							
+							date = row[dateColStr];
+							openPrice = round2(row[openPriceColStr]);
+							highPrice = round2(row[highPriceColStr]);
+							lowPrice = round2(row[lowPriceColStr]);
+							closePrice = round2(row[closePriceColStr]);
+							
+							if (Number.isNaN(openPrice) === true || openPrice === 0) throw new Error("비정상 데이터 / row : " + JSON.stringify(row));
+							if (Number.isNaN(highPrice) === true || highPrice === 0) throw new Error("비정상 데이터 / row : " + JSON.stringify(row));
+							if (Number.isNaN(lowPrice) === true || lowPrice === 0) throw new Error("비정상 데이터 / row : " + JSON.stringify(row));
+							if (Number.isNaN(closePrice) === true || closePrice === 0) throw new Error("비정상 데이터 / row : " + JSON.stringify(row));
+							
+							lastDateResultData[ticker] = {
+								date: date,
+								openPrice: openPrice,
+								highPrice: highPrice,
+								lowPrice: lowPrice,
+								closePrice: closePrice
+							}
+							
+							colCnt = colCnt + 6;
+							tickerCnt++;
+						}
 					}
 					
 					if (rowCnt < 5) {
@@ -676,6 +715,13 @@ function init() {
 					}
 					
 					rowCnt++;
+				})
+				
+				tickerList.forEach(function(ticker) {
+					var tickerDataList = resultData[ticker];
+					if (tickerDataList[tickerDataList.length - 1].date < lastDateResultData[ticker].date) {
+						tickerDataList.push(lastDateResultData[ticker]);
+					}
 				})
 				
 				addChange(resultData, tickerList);
@@ -823,14 +869,13 @@ function initNextBuyTickerResult(config) {
 				stopLossChange = round4(todayBuyTickerData.averageByPlus * myStock.stopLossWight * -1);
 			}
 			
-			var lowPriceChange = 0;
-			if (myStock.positionTicker !== todayBuyTickerData.ticker) {
-				lowPriceChange = round4(buyRow.lowPrice / buyRow.openPrice - 1);
-			} else {
-				lowPriceChange = round4(buyRow.lowPrice / LastBuyRow.closePrice - 1);
-			}
+			var openPriceChange  = round4(buyRow.openPrice / LastBuyRow.closePrice - 1);
+			var lowPriceChange = round4(buyRow.lowPrice / LastBuyRow.closePrice - 1);
 			
-			if (lowPriceChange < stopLossChange) {
+			if (openPriceChange < stopLossChange) {
+				curChange = openPriceChange;
+				isStopLoss = true;
+			} else if (lowPriceChange < stopLossChange) {
 				curChange = stopLossChange;
 				isStopLoss = true;
 			} else {
