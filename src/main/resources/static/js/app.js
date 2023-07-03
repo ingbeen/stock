@@ -72,38 +72,209 @@ function init() {
 					alert("시뮬레이션 실행에 실패하였습니다.");
 				})
 
+			function getRank(arr){
+				let n = arr.length;
+				let answer = Array.from({length:n}, ()=>1);
+				for(let i = 0; i < n; i++){
+					for(let j = 0; j < n; j++){
+						if(arr[j] > arr[i]) answer[i]++;
+					}
+				}
+				return answer;
+			}
 			
 			function nextBuyTickerResultListToMap() {
 				var lastDate = "";
-				var maxProfitAndLoss = 0;
-				config.nextBuyTickerResultList.forEach(function(cur) {
-					var sumProfitAndLoss = cur.avgProfitAndLossByMonth;
-					
-					if (cur.date !== lastDate) {
-						lastDate = cur.date;
-						maxProfitAndLoss = sumProfitAndLoss;
-					}
-					
-					if (maxProfitAndLoss <= sumProfitAndLoss) {
-						maxProfitAndLoss = sumProfitAndLoss;
-						config.nextBuyTickerDataObj[cur.date] = {
-							ticker: cur.ticker,
-							weight: cur.weight,
-							averageByPlus: cur.averageByPlus,
-							averageByMinus: cur.averageByMinus,
+//				var conditionKey = ["weight", "bestPercent", "profitAndLoss", "mdd", "avgProfitAndLossByMonth"
+//					, "avgProfitAndLossByYear", "oneWeekAgoProfitAndLoss", "twoWeekAgoProfitAndLoss"
+//					, "oneMonthAgoProfitAndLoss", "twoMonthAgoProfitAndLoss", "threeMonthAgoProfitAndLoss", "sixMonthAgoProfitAndLoss"];
+				var conditionKey = ["profitAndLoss"];
+				var conditionObj = {};
+				var conditionRankObj = {};
+				var curNextBuyTickerDataList = [];
+				
+				config.nextBuyTickerResultList.forEach(function(cur, listIdx) {
+					if (cur.date !== lastDate || (config.nextBuyTickerResultList.length - 1) === listIdx) {
+//						if (lastDate === "20230629") debugger
+						if (conditionObj.hasData === true) {
+							conditionKey.forEach(function(key) {
+								if (conditionObj.hasOwnProperty(key) === false) return;
+								conditionRankObj[key] = getRank(conditionObj[key]);
+							})
+							
+							conditionKey.forEach(function(key) {
+								if (conditionRankObj.hasOwnProperty(key) === false) return;
+								var point = 1;
+								var rankList = conditionRankObj[key];
+								var tempRankList = rankList.slice();
+								var min = 1;
+								
+								while (rankList.length >= point) {
+									if (point > 1) {
+										rankList.forEach(function(curPoint, idx) {
+											if (min !== curPoint) return;
+											rankList[idx] = point;
+										})
+									}
+									
+									var newTempRankList = [];
+									tempRankList.forEach(function(curPoint) {
+										if (min < curPoint) {
+											newTempRankList.push(curPoint);
+										}
+									})
+									
+									if (newTempRankList.length === 0) break;
+									
+									min = d3.min(newTempRankList);
+									tempRankList = newTempRankList;
+									point++;
+								}
+							})
+							
+							var sumPointList = Array.from({length:curNextBuyTickerDataList.length}, ()=>0);
+							conditionKey.forEach(function(key) {
+								if (conditionRankObj.hasOwnProperty(key) === false) return;
+								var rankList = conditionRankObj[key];
+								rankList.forEach(function(curPoint, idx) {
+									sumPointList[idx] += curPoint;  
+								})
+							})
+							
+							var sumPointMin = d3.min(sumPointList);
+							var minIdxList = [];
+							sumPointList.forEach(function(sumPoint, idx) {
+								if (sumPointMin !== sumPoint) return;
+								minIdxList.push(idx);
+							})
+							
+							var goodNextBuyTickerDataObj = {};
+							if (minIdxList.length === 1) {
+								goodNextBuyTickerDataObj = curNextBuyTickerDataList[minIdxList[0]];
+							} else if (minIdxList.length > 1) {
+								var maxProfitAndLoss = 0;
+								var goodIdx = 0;	
+															
+								if (conditionObj.profitAndLoss === undefined) debugger;
+								
+								minIdxList.forEach(function(idx) {
+									var curProfitAndLoss = conditionObj.profitAndLoss[idx];
+									if (maxProfitAndLoss < curProfitAndLoss) {
+										maxProfitAndLoss = curProfitAndLoss;
+										goodIdx = idx;
+									}
+								})
+								goodNextBuyTickerDataObj = curNextBuyTickerDataList[goodIdx];
+							} else {
+								debugger
+							}
+							
+							config.nextBuyTickerDataObj[lastDate] = {
+								seq: goodNextBuyTickerDataObj.seq,
+								ticker: goodNextBuyTickerDataObj.ticker,
+								weight: goodNextBuyTickerDataObj.weight,
+								averageByPlus: goodNextBuyTickerDataObj.averageByPlus,
+								averageByMinus: goodNextBuyTickerDataObj.averageByMinus,
+							}
 						}
+						
+						if (listIdx % 10000 === 0 || listIdx === 0 || listIdx === (config.nextBuyTickerResultList.length - 1)) {
+							console.log(listIdx + " / " + (config.nextBuyTickerResultList.length - 1));
+						}
+						
+						lastDate = cur.date;
+						conditionObj = {};
+						conditionRankObj = {};
+						curNextBuyTickerDataList = [];
 					}
+					
+					conditionKey.forEach(function(key) {
+						if (cur.hasOwnProperty(key)) {
+							if (Array.isArray(conditionObj[key]) === false) {
+								conditionObj[key] = [];
+							}
+							
+							conditionObj[key].push(cur[key]);
+						}
+					})
+					
+					conditionObj.hasData = true;
+					
+					curNextBuyTickerDataList.push({
+						point: 0,
+						seq: cur.seq,
+						ticker: cur.ticker,
+						weight: cur.weight,
+						averageByPlus: cur.averageByPlus,
+						averageByMinus: cur.averageByMinus,
+					})
 				})
 			}
 			
+//			function nextBuyTickerResultListToMap() {
+//				var lastDate = "";
+//				var maxCondition = 0;
+//				
+//				config.nextBuyTickerResultList.forEach(function(cur) {
+////					var condition = cur.avgProfitAndLossByMonth;
+//					var condition = cur.profitAndLoss;
+//					
+//					if (cur.date !== lastDate) {
+//						lastDate = cur.date;
+//						maxCondition = condition;
+//					}
+//					
+//					if (maxCondition <= condition) {
+//						maxCondition = condition;
+//						config.nextBuyTickerDataObj[cur.date] = {
+//							seq: cur.seq,
+//							ticker: cur.ticker,
+//							weight: cur.weight,
+//							averageByPlus: cur.averageByPlus,
+//							averageByMinus: cur.averageByMinus,
+//						}
+//					}
+//				})
+//			}
+			
+//			function getNextBuyTickerResultList() {
+//				var seqList = [];
+//				seqList.push(Number.parseInt($("#seq1").val()));
+//				seqList.push(Number.parseInt($("#seq2").val()));
+//				config.seq = seqList.join();
+//				
+//				return new Promise(function(resolve, reject) {
+//					$.ajax({
+//						type: "post",
+//						url: "/data/select/nextBuyTickerResult",
+//						data: JSON.stringify({
+//							seqList: JSON.stringify(seqList)
+//						}),
+//						contentType: 'application/json; charset=utf-8',
+//						dataType : "json"
+//					})
+//					.done(function(resp) {
+//						if (resp.success === true) {
+//							resolve(resp.nextBuyTickerResultList);
+//						} else {
+//							reject();
+//						}
+//					})
+//					.fail(function() {
+//						reject();
+//					})
+//				})
+//			}
+			
 			function getNextBuyTickerResultList() {
-				var seqList = [];
-				seqList.push(Number.parseInt($("#seq1").val()));
-				seqList.push(Number.parseInt($("#seq2").val()));
-				config.seq = seqList.join();
+//				var seqList = [];
+//				seqList.push(Number.parseInt($("#seq1").val()));
+//				seqList.push(Number.parseInt($("#seq2").val()));
+//				config.seq = "all";
 				
 				return new Promise(function(resolve, reject) {
 					_getNextBuyTickerResultList(resolve, reject, [], 2013);
+//					_getNextBuyTickerResultList(resolve, reject, [], 2023);
 				})
 				
 				function _getNextBuyTickerResultList(resolve, reject, nextBuyTickerResultList, year) {
@@ -148,6 +319,7 @@ function init() {
 				.done(function(resp) {
 					if (resp.success === true) {
 						console.log("시뮬레이션 데이터 업로드 성공 (insertCnt : " + resp.insertCnt + ")");
+						alert("시뮬레이션 데이터 업로드 성공 (insertCnt : " + resp.insertCnt + ")");
 //						var newSeq2 = Number.parseInt($("#seq2").val()) + 1;
 //						
 //						if (newSeq2 > 1225) {
@@ -221,7 +393,10 @@ function init() {
 						
 						if (newEndLength > 250) {
 							var newStartLength = Number.parseInt($("#startLength").val()) + 5;
-							if (newStartLength > 245) return;
+							if (newStartLength > 245) {
+								alert("매수결과 데이터 업로드 성공 (startLength : " + $("#startLength").val() + " / endLength : " + $("#endLength").val() + " / seq : " + config.seq + " / insertCnt : " + resp.insertCnt + ")");
+								return;
+							}
 							
 							$("#startLength").val(newStartLength);
 							$("#endLength").val(newStartLength + 5);
@@ -848,6 +1023,8 @@ function initNextBuyTickerResult(config) {
 		nextMonth: "",
 		nextYear: "",
 		stopLossWight: 1,
+		maxProfitAndLoss: "",
+		mdd: 0,
 	}
 	
 	var idx = 0;
@@ -857,16 +1034,21 @@ function initNextBuyTickerResult(config) {
 		var date = longRow.date;
 		var todayBuyTickerData = {};
 		var todayProfitAndLoss =  0;
-		var todayIsSell = false;
-		var todayIsBuy = false;
-		var unrealizedProfitAndLoss = 0;
-		
+		var isTodaySell = false;
+		var todaySellTicker = "";
+		var isTodayBuy = false;
 		var buyRow = {};
 		var LastBuyRow = {};
 		var finalPrice = 0;
 		var isStopLoss = false;
+		var stopLossPrice = 0;
+		
+//		if (config.seq === 4 && date === "20200611") debugger
+//		if (date === "20130502") debugger
 		
 		if (isEmptyObj(myStock.detail) === false) {
+			if (myStock.detail.averageByMinus === 0 || myStock.detail.averageByPlus === 0) debugger;
+			
 			if (myStock.detail.ticker === longTicker) {
 				buyRow = longRow;
 				LastBuyRow = longDataList[idx - 1];
@@ -877,12 +1059,14 @@ function initNextBuyTickerResult(config) {
 				stopLossPrice = round2(LastBuyRow.closePrice * (1 - (myStock.detail.averageByPlus * myStock.stopLossWight)));
 			}
 			
-			if (buyRow.openPrice <= stopLossPrice) {
-				finalPrice = buyRow.openPrice;
-				isStopLoss = true;
-			} else if (buyRow.lowPrice <= stopLossPrice) {
+//			if (buyRow.openPrice <= stopLossPrice) {
+//				finalPrice = buyRow.openPrice;
+//				isStopLoss = true;
+//			} else 
+			if (buyRow.lowPrice <= stopLossPrice) {
 				finalPrice = stopLossPrice;
 				isStopLoss = true;
+				todaySellTicker = myStock.detail.ticker;
 			}
 		}
 		
@@ -908,31 +1092,41 @@ function initNextBuyTickerResult(config) {
 			sell(shortTicker);
 			sell(longTicker);
 			
-			if (todayIsSell === false) {
+			if (isTodaySell === false && myStock.profitAndLossListByMonth.length === 0) {
 				idx++;
 				continue;
-			} else {
-				debugger;
-			}
+			} 
+//			else {
+//				debugger;
+//			}
 		}
 		
-		if (isEmptyObj(myStock.detail)) debugger;
+		if (isEmptyStr(todayBuyTickerData.ticker) === false) {
+			myStock.detail.averageByMinus = todayBuyTickerData.averageByMinus;
+			myStock.detail.averageByPlus = todayBuyTickerData.averageByPlus;
+		}
+		
+//		if (isEmptyObj(myStock.detail)) debugger;
 			
-		if (todayIsSell === false && todayIsBuy === false) {
+		if (isTodaySell === false && isTodayBuy === false && isEmptyObj(myStock.detail) === false) {
 			var row = {};
+			var LastRow = {};
 			
-			if (isEmptyObj(myStock.detail)) debugger;
+//			if (isEmptyObj(myStock.detail)) debugger;
 		
 			if (todayBuyTickerData.ticker === longTicker) {
 				row = longRow;
+				LastRow = longDataList[idx - 1];
 			} else if (todayBuyTickerData.ticker === shortTicker) {
 				row = shoutRow;
+				LastRow = shortDataList[idx - 1];
 			}
 			
-			unrealizedProfitAndLoss = round2(myStock.detail.count * (row.closePrice - myStock.detail.price));
-		} else if (todayProfitAndLoss === 0 && unrealizedProfitAndLoss === 0) {
-			debugger;
-		}
+			todayProfitAndLoss = round2(myStock.detail.count * (row.closePrice - LastRow.closePrice));
+		} 
+//		else if (todayProfitAndLoss === 0) {
+//			debugger;
+//		}
 			
 		var monthDate = moment(date).format("YYYYMM");
 		var yearDate = moment(date).format("YYYY");
@@ -979,6 +1173,23 @@ function initNextBuyTickerResult(config) {
 		profitAndLossListByMonth[lastIdxByMonthList].profitAndLoss = round2(profitAndLossListByMonth[lastIdxByMonthList].profitAndLoss + todayProfitAndLoss);
 		profitAndLossListByYear[lastIdxByYearList].profitAndLoss = round2(profitAndLossListByYear[lastIdxByYearList].profitAndLoss + todayProfitAndLoss);
 		
+		if (myStock.maxProfitAndLoss === "") {
+			myStock.maxProfitAndLoss = myStock.profitAndLoss;
+		}
+		
+		if (myStock.maxProfitAndLoss <= myStock.profitAndLoss) {
+			myStock.maxProfitAndLoss = myStock.profitAndLoss;
+			myStock.mdd = 0;
+		} else {
+			if (myStock.profitAndLoss <= 0) {
+				myStock.mdd = round0(myStock.maxProfitAndLoss * -1 + myStock.profitAndLoss);
+			} else {
+				myStock.mdd = round0(myStock.maxProfitAndLoss * -1 + myStock.profitAndLoss);
+			}
+		}
+		
+		if (myStock.mdd > 0) debugger;
+		
 		if (myStock.profitAndLossListByMonth.length >= 3) {
 			var tempProfitAndLossListByMonth = [];
 			myStock.profitAndLossListByMonth.slice(1, -1).forEach(function(cur) {
@@ -996,19 +1207,44 @@ function initNextBuyTickerResult(config) {
 				tempProfitAndLossListByYear[0] = 0;
 			}
 			
+			var issue = "";
+			var detailTicker = myStock.detail.ticker === undefined ? "none" : myStock.detail.ticker;
+			if (isStopLoss === true) {
+				issue = "isStopLoss : " + todaySellTicker + " / detailTicker : " + detailTicker;
+			} else if (isTodaySell === true) {
+				issue = "isTodaySell : " + todaySellTicker + " / detailTicker : " + detailTicker;
+			} else if (isTodayBuy === true) {
+				issue = "isTodayBuy / detailTicker : " + detailTicker;
+			} else if (isTodaySell === false && isTodayBuy === false) {
+				issue = "hold / detailTicker : " + detailTicker;
+			} else {
+				debugger
+			}
+			
 			var nextBuyTickerResultData = {
-				seq: config.seq,
+//				seq: config.seq,
 				date: date,
 				profitAndLoss: round0(myStock.profitAndLoss),
 				todayProfitAndLoss: round0(todayProfitAndLoss),
-				unrealizedProfitAndLoss: round0(unrealizedProfitAndLoss),
+				mdd: myStock.mdd,
+				issue: issue,
 				avgProfitAndLossByMonth: round0(d3.median(tempProfitAndLossListByMonth)),
 				avgProfitAndLossByYear: round0(d3.median(tempProfitAndLossListByYear)),
+				oneWeekAgoProfitAndLoss: round0(d3.sum(myStock.profitAndLossList.slice(-5))),
+				twoWeekAgoProfitAndLoss: round0(d3.sum(myStock.profitAndLossList.slice(-10))),
 				oneMonthAgoProfitAndLoss: round0(d3.sum(myStock.profitAndLossList.slice(-20))),
 				twoMonthAgoProfitAndLoss: round0(d3.sum(myStock.profitAndLossList.slice(-20 * 2))),
 				threeMonthAgoProfitAndLoss: round0(d3.sum(myStock.profitAndLossList.slice(-20 * 3))),
 				sixMonthAgoProfitAndLoss: round0(d3.sum(myStock.profitAndLossList.slice(-20 * 6))),
 			}
+			
+			var seq = "";
+			if (config.seq === undefined) {
+				seq = todayBuyTickerData.seq === undefined ? "none" : todayBuyTickerData.seq;
+			} else {
+				seq = config.seq;
+			}
+			nextBuyTickerResultData.seq = seq;
 			
 			nextBuyTickerResultList.push(nextBuyTickerResultData);
 		}
@@ -1018,13 +1254,16 @@ function initNextBuyTickerResult(config) {
 		
 	function sell(ticker, sellPrice) {
 		var row = {};
+		var LastRow = {};
 		
 		if (myStock.detail.ticker !== ticker) return;
 		
 		if (ticker === longTicker) {
 			row = longRow;
+			LastRow = longDataList[idx - 1];
 		} else if (ticker === shortTicker) {
 			row = shoutRow;
+			LastRow = shortDataList[idx - 1];
 		}
 		
 		if (sellPrice === undefined) {
@@ -1032,8 +1271,9 @@ function initNextBuyTickerResult(config) {
 		}
 		
 		var charge = round2(myStock.detail.count * sellPrice * myStock.charge);
-		todayProfitAndLoss = round2(myStock.detail.count * (sellPrice - myStock.detail.price) - charge);
-		todayIsSell = true;
+		todayProfitAndLoss = round2(myStock.detail.count * (sellPrice - LastRow.closePrice) - charge);
+		isTodaySell = true;
+		todaySellTicker = myStock.detail.ticker;
 		myStock.detail = {};
 	}
 	
@@ -1051,13 +1291,11 @@ function initNextBuyTickerResult(config) {
 		var charge = round2(myStock.betMoney * myStock.charge);
 		todayProfitAndLoss = round2(todayProfitAndLoss - charge);
 		
-		todayIsBuy = true;
+		isTodayBuy = true;
 		myStock.detail = {
 			ticker: ticker,
 			count: round2(myStock.betMoney / row.closePrice),
-			price: row.closePrice,
-			averageByMinus: todayBuyTickerData.averageByMinus,
-			averageByPlus: todayBuyTickerData.averageByPlus,
+			price: row.closePrice
 		}
 	}
 }

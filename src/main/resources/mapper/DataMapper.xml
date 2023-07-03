@@ -108,9 +108,12 @@
 			, bDate
 			, profitAndLoss
 			, todayProfitAndLoss
-			, unrealizedProfitAndLoss
+			, mdd
+			, issue
 			, avgProfitAndLossByMonth
 			, avgProfitAndLossByYear
+			, oneWeekAgoProfitAndLoss
+			, twoWeekAgoProfitAndLoss
 			, oneMonthAgoProfitAndLoss
 			, twoMonthAgoProfitAndLoss
 			, threeMonthAgoProfitAndLoss
@@ -123,9 +126,12 @@
 			, #{item.date}
 			, #{item.profitAndLoss}
 			, #{item.todayProfitAndLoss}
-			, #{item.unrealizedProfitAndLoss}
+			, #{item.mdd}
+			, #{item.issue}
 			, #{item.avgProfitAndLossByMonth}
 			, #{item.avgProfitAndLossByYear}
+			, #{item.oneWeekAgoProfitAndLoss}
+			, #{item.twoWeekAgoProfitAndLoss}
 			, #{item.oneMonthAgoProfitAndLoss}
 			, #{item.twoMonthAgoProfitAndLoss}
 			, #{item.threeMonthAgoProfitAndLoss}
@@ -133,27 +139,41 @@
 		)
 		</foreach>
     </insert>
-
-    <select id="selectNextBuyTickerResult" parameterType="String" resultType="Map">
+	
+<!--     <select id="selectNextBuyTickerResult" parameterType="String" resultType="Map"> -->
+    <select id="selectNextBuyTickerResult" parameterType="List" resultType="Map">
 		select a.seq
 			, a.bDate as 'date'
 			, b.nextTicker as 'ticker'
 			, b.nextWeight as 'weight'
+			, b.bestPercent
 			, b.averageByPlus
 			, b.averageByMinus
 			, a.profitAndLoss
+			, a.mdd
+			, a.avgProfitAndLossByMonth
+			, a.avgProfitAndLossByYear
+			, a.oneWeekAgoProfitAndLoss
+			, a.twoWeekAgoProfitAndLoss
 			, a.oneMonthAgoProfitAndLoss
 			, a.twoMonthAgoProfitAndLoss
 			, a.threeMonthAgoProfitAndLoss
 			, a.sixMonthAgoProfitAndLoss
-			, a.avgProfitAndLossByMonth
-			, a.avgProfitAndLossByYear
 		from next_buy_ticker_result a
 		inner join next_buy_ticker b
 		on a.seq = b.seq
 		and a.bDate = b.bDate
 		where 1=1
+<!-- 		and a.seq in (1,2,3,4,5,6,100,200,300,400) -->
 		and a.bDate between concat(#{value}, '0101') and concat(#{value}, '1231')
+<!-- 		and a.seq in  -->
+<!-- 			( -->
+<!-- 		<foreach collection="list" item="item" separator=","> -->
+<!-- 			#{item} -->
+<!-- 		</foreach> -->
+<!-- 			) -->
+<!-- 		and a.twoMonthAgoProfitAndLoss > 0 -->
+<!-- 		and (a.oneWeekAgoProfitAndLoss > 0 or a.twoWeekAgoProfitAndLoss > 0) -->
 		order by a.bDate, a.seq
 	</select>
     
@@ -175,9 +195,12 @@
 			, bDate
 			, profitAndLoss
 			, todayProfitAndLoss
-			, unrealizedProfitAndLoss
+			, mdd
+			, issue
 			, avgProfitAndLossByMonth
 			, avgProfitAndLossByYear
+			, oneWeekAgoProfitAndLoss
+			, twoWeekAgoProfitAndLoss
 			, oneMonthAgoProfitAndLoss
 			, twoMonthAgoProfitAndLoss
 			, threeMonthAgoProfitAndLoss
@@ -190,9 +213,12 @@
 			, #{item.date}
 			, #{item.profitAndLoss}
 			, #{item.todayProfitAndLoss}
-			, #{item.unrealizedProfitAndLoss}
+			, #{item.mdd}
+			, #{item.issue}
 			, #{item.avgProfitAndLossByMonth}
 			, #{item.avgProfitAndLossByYear}
+			, #{item.oneWeekAgoProfitAndLoss}
+			, #{item.twoWeekAgoProfitAndLoss}
 			, #{item.oneMonthAgoProfitAndLoss}
 			, #{item.twoMonthAgoProfitAndLoss}
 			, #{item.threeMonthAgoProfitAndLoss}
