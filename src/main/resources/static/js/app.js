@@ -35,9 +35,6 @@ function insertScript(script) {
 
 function init() {
 	bind();
-//	$("#upload").trigger("click");
-//	$("#expectedTicker").trigger("click");
-//	$("#simulation").trigger("click");
 	
 	function bind() {
 		$("#simulation").on("click", function(e, param) {
@@ -95,7 +92,9 @@ function init() {
 				
 				config.nextBuyTickerResultList.forEach(function(cur, listIdx) {
 					if (cur.date !== lastDate || (config.nextBuyTickerResultList.length - 1) === listIdx) {
-//						if (lastDate === "20230629") debugger
+						
+//						if (lastDate === "20130405") debugger
+
 						if (conditionObj.hasData === true) {
 							conditionKey.forEach(function(key) {
 								if (conditionObj.hasOwnProperty(key) === false) return;
@@ -148,26 +147,8 @@ function init() {
 								minIdxList.push(idx);
 							})
 							
-							var goodNextBuyTickerDataObj = {};
-							if (minIdxList.length === 1) {
-								goodNextBuyTickerDataObj = curNextBuyTickerDataList[minIdxList[0]];
-							} else if (minIdxList.length > 1) {
-								var maxProfitAndLoss = 0;
-								var goodIdx = 0;	
-															
-								if (conditionObj.profitAndLoss === undefined) debugger;
-								
-								minIdxList.forEach(function(idx) {
-									var curProfitAndLoss = conditionObj.profitAndLoss[idx];
-									if (maxProfitAndLoss < curProfitAndLoss) {
-										maxProfitAndLoss = curProfitAndLoss;
-										goodIdx = idx;
-									}
-								})
-								goodNextBuyTickerDataObj = curNextBuyTickerDataList[goodIdx];
-							} else {
-								debugger
-							}
+							if (minIdxList.length === 0) debugger;
+							var goodNextBuyTickerDataObj = curNextBuyTickerDataList[minIdxList[0]];
 							
 							config.nextBuyTickerDataObj[lastDate] = {
 								seq: goodNextBuyTickerDataObj.seq,
@@ -176,10 +157,6 @@ function init() {
 								averageByPlus: goodNextBuyTickerDataObj.averageByPlus,
 								averageByMinus: goodNextBuyTickerDataObj.averageByMinus,
 							}
-						}
-						
-						if (listIdx % 10000 === 0 || listIdx === 0 || listIdx === (config.nextBuyTickerResultList.length - 1)) {
-							console.log(listIdx + " / " + (config.nextBuyTickerResultList.length - 1));
 						}
 						
 						lastDate = cur.date;
@@ -208,70 +185,14 @@ function init() {
 						averageByPlus: cur.averageByPlus,
 						averageByMinus: cur.averageByMinus,
 					})
+						
+					if (listIdx % 100000 === 0 || listIdx === 0 || listIdx === (config.nextBuyTickerResultList.length - 1)) {
+						console.log(listIdx + " / " + (config.nextBuyTickerResultList.length - 1));
+					}
 				})
 			}
 			
-//			function nextBuyTickerResultListToMap() {
-//				var lastDate = "";
-//				var maxCondition = 0;
-//				
-//				config.nextBuyTickerResultList.forEach(function(cur) {
-////					var condition = cur.avgProfitAndLossByMonth;
-//					var condition = cur.profitAndLoss;
-//					
-//					if (cur.date !== lastDate) {
-//						lastDate = cur.date;
-//						maxCondition = condition;
-//					}
-//					
-//					if (maxCondition <= condition) {
-//						maxCondition = condition;
-//						config.nextBuyTickerDataObj[cur.date] = {
-//							seq: cur.seq,
-//							ticker: cur.ticker,
-//							weight: cur.weight,
-//							averageByPlus: cur.averageByPlus,
-//							averageByMinus: cur.averageByMinus,
-//						}
-//					}
-//				})
-//			}
-			
-//			function getNextBuyTickerResultList() {
-//				var seqList = [];
-//				seqList.push(Number.parseInt($("#seq1").val()));
-//				seqList.push(Number.parseInt($("#seq2").val()));
-//				config.seq = seqList.join();
-//				
-//				return new Promise(function(resolve, reject) {
-//					$.ajax({
-//						type: "post",
-//						url: "/data/select/nextBuyTickerResult",
-//						data: JSON.stringify({
-//							seqList: JSON.stringify(seqList)
-//						}),
-//						contentType: 'application/json; charset=utf-8',
-//						dataType : "json"
-//					})
-//					.done(function(resp) {
-//						if (resp.success === true) {
-//							resolve(resp.nextBuyTickerResultList);
-//						} else {
-//							reject();
-//						}
-//					})
-//					.fail(function() {
-//						reject();
-//					})
-//				})
-//			}
-			
 			function getNextBuyTickerResultList() {
-//				var seqList = [];
-//				seqList.push(Number.parseInt($("#seq1").val()));
-//				seqList.push(Number.parseInt($("#seq2").val()));
-//				config.seq = "all";
-				
 				return new Promise(function(resolve, reject) {
 					_getNextBuyTickerResultList(resolve, reject, [], 2013);
 //					_getNextBuyTickerResultList(resolve, reject, [], 2023);
@@ -320,20 +241,6 @@ function init() {
 					if (resp.success === true) {
 						console.log("시뮬레이션 데이터 업로드 성공 (insertCnt : " + resp.insertCnt + ")");
 						alert("시뮬레이션 데이터 업로드 성공 (insertCnt : " + resp.insertCnt + ")");
-//						var newSeq2 = Number.parseInt($("#seq2").val()) + 1;
-//						
-//						if (newSeq2 > 1225) {
-//							var newSeq1 = Number.parseInt($("#seq1").val()) + 1;
-//							if (newSeq1 > 1224) return;
-//							
-//							$("#seq1").val(newSeq1);
-//							$("#seq2").val(newSeq1 + 1);
-//							$("#simulation").trigger("click");
-//							return;
-//						} else {
-//							$("#seq2").val(newSeq2);
-//							$("#simulation").trigger("click");
-//						}
 					} else {
 						alert("시뮬레이션 데이터 업로드 실패");
 					}
@@ -1046,7 +953,7 @@ function initNextBuyTickerResult(config) {
 //		if (config.seq === 4 && date === "20200611") debugger
 //		if (date === "20130502") debugger
 		
-		if (isEmptyObj(myStock.detail) === false) {
+		if (isEmptyStr(myStock.detail.ticker) === false) {
 			if (myStock.detail.averageByMinus === 0 || myStock.detail.averageByPlus === 0) debugger;
 			
 			if (myStock.detail.ticker === longTicker) {
@@ -1095,24 +1002,17 @@ function initNextBuyTickerResult(config) {
 			if (isTodaySell === false && myStock.profitAndLossListByMonth.length === 0) {
 				idx++;
 				continue;
-			} 
-//			else {
-//				debugger;
-//			}
+			}
 		}
 		
 		if (isEmptyStr(todayBuyTickerData.ticker) === false) {
 			myStock.detail.averageByMinus = todayBuyTickerData.averageByMinus;
 			myStock.detail.averageByPlus = todayBuyTickerData.averageByPlus;
 		}
-		
-//		if (isEmptyObj(myStock.detail)) debugger;
 			
-		if (isTodaySell === false && isTodayBuy === false && isEmptyObj(myStock.detail) === false) {
+		if (isTodaySell === false && isTodayBuy === false && isEmptyStr(myStock.detail.ticker) === false) {
 			var row = {};
 			var LastRow = {};
-			
-//			if (isEmptyObj(myStock.detail)) debugger;
 		
 			if (todayBuyTickerData.ticker === longTicker) {
 				row = longRow;
@@ -1123,10 +1023,7 @@ function initNextBuyTickerResult(config) {
 			}
 			
 			todayProfitAndLoss = round2(myStock.detail.count * (row.closePrice - LastRow.closePrice));
-		} 
-//		else if (todayProfitAndLoss === 0) {
-//			debugger;
-//		}
+		}
 			
 		var monthDate = moment(date).format("YYYYMM");
 		var yearDate = moment(date).format("YYYY");
@@ -1222,7 +1119,6 @@ function initNextBuyTickerResult(config) {
 			}
 			
 			var nextBuyTickerResultData = {
-//				seq: config.seq,
 				date: date,
 				profitAndLoss: round0(myStock.profitAndLoss),
 				todayProfitAndLoss: round0(todayProfitAndLoss),
@@ -1288,14 +1184,16 @@ function initNextBuyTickerResult(config) {
 			row = shoutRow;
 		}
 		
-		var charge = round2(myStock.betMoney * myStock.charge);
+		var betMoney = myStock.betMoney;
+		
+		var charge = round2(betMoney * myStock.charge);
 		todayProfitAndLoss = round2(todayProfitAndLoss - charge);
 		
 		isTodayBuy = true;
 		myStock.detail = {
 			ticker: ticker,
-			count: round2(myStock.betMoney / row.closePrice),
-			price: row.closePrice
+			count: round2(betMoney / row.closePrice),
+			price: row.closePrice,
 		}
 	}
 }
